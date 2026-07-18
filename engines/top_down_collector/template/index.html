@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generated Game</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  canvas { display: block; }
+  #ui { position: absolute; top: 20px; left: 20px; color: #D4F870; font-family: monospace; font-size: 24px; }
+</style>
+</head>
+<body>
+<div id="ui">Score: <span id="score">0</span></div>
+<canvas id="game"></canvas>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ============================================
+// TOP-DOWN COLLECTOR ENGINE
+// Reads window.GAME_PARAMS and window.SPRITE_MANIFEST
+// ============================================
+const params = window.GAME_PARAMS;
+const manifest = window.SPRITE_MANIFEST;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+
+// Resize canvas
+function resize() {
+  canvas.width = Math.min(window.innerWidth, 800);
+  canvas.height = Math.min(window.innerHeight, 800);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// --- Sprite Loading ---
+const sprites = {};
+let spritesLoaded = 0;
+manifest.sprites.forEach(name => {
+  const img = new Image();
+  img.onload = () => { spritesLoaded++; };
+  img.src = 'sprites/' + name;
+  sprites[name] = img;
+});
+
+// --- Game State ---
+let player = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  vx: 0,
+  vy: 0,
+  speed: params.player.speed,
+  size: params.player.size,
+  magnetRange: params.player.magnet_range
+};
+
+let collectibles = [];
+let enemies = [];
+let score = 0;
+let gameTime = 0;
+let gameOver = false;
+let keys = {};
+
+// --- Input ---
+window.addEventListener('keydown', e => { keys[e.key] = true; });
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// --- Spawning ---
+let spawnTimer = 0;
+function getSpawnInterval() {
+  const ramp = Math.min(gameTime / params.spawning.difficulty_ramp_duration, 1);
+  return params.spawning.initial_spawn_interval + 
+         (params.spawning.min_spawn_interval - params.spawning.initial_spawn_interval) * ramp;
+}
+
+function spawnObject() {
+  const totalWeight = [...params.collectibles, ...params.enemies].reduce((sum, o) => sum + o.spawn_weight, 0);
+  let roll = Math.random() * totalWeight;
+  
+  for (let obj of [...params.collectibles, ...params.enemies]) {
+    roll -= obj.spawn_weight;
+    if (roll <= 0) {
+      const padding = params.spawning.spawn_area_padding;
+      const side = Math.floor(Math.random() * 4);
+      let x, y;
+      
+      if (side === 0) { x = Math.random() * canvas.width; y = -padding; }
+      else if (side === 1) { x = canvas.width + padding; y = Math.random() * canvas.height; }
+      else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + padding; }
+      else { x = -padding; y = Math.random() * canvas.height; }
+      
+      const isEnemy = params.enemies.includes(obj);
+      return { ...obj, x, y, isEnemy };
+    }
+  }
+  return null;
+}
+
+// --- Update ---
+function update(dt) {
+  if (gameOver) return;
+  
+  gameTime += dt;
+  
+  // Player movement
+  let moveX = 0, moveY = 0;
+  if (keys['ArrowLeft'] || keys['a']) moveX -= 1;
+  if (keys['ArrowRight'] || keys['d']) moveX += 1;
+  if (keys['ArrowUp'] || keys['w']) moveY -= 1;
+  if (keys['ArrowDown'] || keys['s']) moveY += 1;
+  
+  // Normalize diagonal movement
+  const mag = Math.sqrt(moveX * moveX + moveY * moveY);
+  if (mag > 0) { moveX /= mag; moveY /= mag; }
+  
+  player.x += moveX * player.speed * dt;
+  player.y += moveY * player.speed * dt;
+  
+  // Clamp to screen
+  player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+  
+  // Spawning
+  spawnTimer -= dt;
+  const totalObjects = collectibles.length + enemies.length;
+  
+  if (spawnTimer <= 0 && totalObjects < params.spawning.max_active_objects) {
+    const obj = spawnObject();
+    if (obj) {
+      if (obj.isEnemy) enemies.push(obj);
+      else collectibles.push(obj);
+    }
+    spawnTimer = getSpawnInterval();
+  }
+  
+  // Update collectibles (magnet logic)
+  for (let c of collectibles) {
+    const dx = player.x - c.x;
+    const dy = player.y - c.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist < player.magnetRange && dist > 0) {
+      c.x += (dx / dist) * player.speed * 1.5 * dt;
+      c.y += (dy / dist) * player.speed * 1.5 * dt;
+    }
+    
+    // Check collision
+    if (dist < player.size + c.size) {
+      score += c.points;
+      collectibles = collectibles.filter(o => o !== c);
+      scoreEl.textContent = score;
+    }
+  }
+  
+  // Update enemies
+  for (let e of enemies) {
+    if (e.behavior === 'chase') {
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 0) {
+        e.x += (dx / dist) * e.speed * dt;
+        e.y += (dy / dist) * e.speed * dt;
+      }
+    }
+    
+    // Check collision with player
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < player.size + e.size) {
+      gameOver = true;
+    }
+  }
+  
+  // Win condition check
+  if (params.win_condition.type === 'score' && score >= params.win_condition.target_score) {
+    gameOver = true;
+  }
+  if (params.win_condition.type === 'survival' && gameTime >= params.win_condition.survival_duration) {
+    gameOver = true;
+  }
+}
+
+// --- Render ---
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw collectibles
+  for (let c of collectibles) {
+    const sprite = sprites[`collectible_${c.sprite_index || 0}.png`];
+    if (sprite && sprite.complete) {
+      ctx.drawImage(sprite, c.x - c.size, c.y - c.size, c.size * 2, c.size * 2);
+    } else {
+      ctx.fillStyle = '#D4F870';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // Draw enemies
+  for (let e of enemies) {
+    const sprite = sprites[`enemy_${e.sprite_index || 0}.png`];
+    if (sprite && sprite.complete) {
+      ctx.drawImage(sprite, e.x - e.size, e.y - e.size, e.size * 2, e.size * 2);
+    } else {
+      ctx.fillStyle = '#FF0000';
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  // Draw player
+  const playerSprite = sprites['player.png'];
+  if (playerSprite && playerSprite.complete) {
+    ctx.drawImage(playerSprite, player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
+  } else {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Game over overlay
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#D4F870';
+    ctx.font = '48px monospace';
+    ctx.textAlign = 'center';
+    
+    const won = (params.win_condition.type === 'score' && score >= params.win_condition.target_score) || 
+                (params.win_condition.type === 'survival' && gameTime >= params.win_condition.survival_duration);
+                
+    ctx.fillText(won ? 'YOU WIN!' : 'GAME OVER', canvas.width / 2, canvas.height / 2);
+    ctx.font = '24px monospace';
+    ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+  }
+}
+
+// --- Game Loop ---
+let lastTime = performance.now();
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+  lastTime = timestamp;
+  
+  update(dt);
+  draw();
+  
+  requestAnimationFrame(loop);
+}
+
+function startWhenReady() {
+  if (spritesLoaded >= manifest.sprites.length || spritesLoaded > 0 || manifest.sprites.length === 0) {
+    requestAnimationFrame(loop);
+  } else {
+    setTimeout(startWhenReady, 100);
+  }
+}
+setTimeout(startWhenReady, 100);
+</script>
+</body>
+</html>

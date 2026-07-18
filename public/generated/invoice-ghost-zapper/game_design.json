@@ -1,0 +1,79 @@
+{
+  "chosen_archetype": "magic_cat",
+  "why": "Wave-based symbol matching turns Ramp AP Agents into fast triage: every invoice threat needs the right approve, reject, dedupe, or code action before it reaches finance.",
+  "title": "Invoice Ghost Zapper",
+  "subtitle": "Draw the right action to clear bills before they hit the ledger.",
+  "hud_label": "Bills Cleared",
+  "duration_seconds": 60,
+  "target_score": 1500,
+  "closing_stat": "Ramp AP Agents cleared {score} bills while finance only touched the exceptions.",
+  "art_style": "spooky-cute flat cartoon with chunky invoice ghosts, bold outlines, purple-and-green night-office palette, glowing ledger UI, and playful finance details",
+  "feature_explainer": {
+    "headline": "Ramp AP Agents / Bill Pay",
+    "bullets": [
+      "AI agents sort real invoices from fraud and duplicates automatically.",
+      "Line items get coded into the right buckets and routed for approval or rejection.",
+      "Finance teams only step in for the exceptions."
+    ],
+    "cta_text": "See Ramp Bill Pay",
+    "learn_more_url": "https://ramp.com"
+  },
+  "player": {
+    "name": "Ramp AP Agent",
+    "sprite": "player"
+  },
+  "enemy_types": [
+    {
+      "name": "Legit Invoice",
+      "sprite": "enemy_1",
+      "action": "Approve stamp"
+    },
+    {
+      "name": "Fraud Invoice",
+      "sprite": "enemy_2",
+      "action": "Reject shield"
+    },
+    {
+      "name": "Duplicate Bill",
+      "sprite": "enemy_3",
+      "action": "Dedupe link"
+    },
+    {
+      "name": "Uncoded Line Item",
+      "sprite": "enemy_4",
+      "action": "Code bucket"
+    }
+  ],
+  "sprites": [
+    {
+      "name": "player",
+      "role": "player",
+      "prompt": "AI finance agent mascot holding a stamp and glowing pen"
+    },
+    {
+      "name": "enemy_1",
+      "role": "enemy",
+      "prompt": "smiling invoice sheet with checkmark seal"
+    },
+    {
+      "name": "enemy_2",
+      "role": "enemy",
+      "prompt": "invoice sheet with mask and warning triangle"
+    },
+    {
+      "name": "enemy_3",
+      "role": "enemy",
+      "prompt": "two overlapping invoice sheets with chain link icon"
+    },
+    {
+      "name": "enemy_4",
+      "role": "enemy",
+      "prompt": "receipt line items floating beside category buckets"
+    },
+    {
+      "name": "background",
+      "role": "bg",
+      "prompt": "nighttime accounts payable office with central ledger portal and scattered bill folders"
+    }
+  ]
+}

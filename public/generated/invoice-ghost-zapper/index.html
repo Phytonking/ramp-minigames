@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice Ghost Zapper</title>
+<style>
+  :root{
+    --ink:#f8fff5;
+    --gold:#ffd866;
+    --mint:#70ffb5;
+    --lime:#9cff5d;
+    --purple:#21113f;
+    --deep:#10081f;
+    --pink:#ff6fb7;
+    --blue:#72dcff;
+    --danger:#ff596d;
+  }
+  html,body{
+    margin:0;
+    height:100%;
+    background:
+      radial-gradient(circle at 50% 25%, rgba(112,255,181,.14), transparent 28%),
+      radial-gradient(circle at 20% 80%, rgba(255,111,183,.10), transparent 25%),
+      linear-gradient(180deg,#160b2b,#090613 72%);
+    font-family: "Trebuchet MS", system-ui, -apple-system, Segoe UI, sans-serif;
+    overflow:hidden;
+    color:var(--ink);
+  }
+  #wrap{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    box-sizing:border-box;
+  }
+  canvas{
+    width:min(96vw, 920px);
+    height:auto;
+    max-height:92vh;
+    background:radial-gradient(circle at 50% 42%,#3a2260,#160c28 70%);
+    box-shadow:
+      0 18px 60px rgba(0,0,0,.6),
+      0 0 0 3px rgba(112,255,181,.25),
+      inset 0 0 70px rgba(112,255,181,.08);
+    border-radius:18px;
+    cursor:crosshair;
+    touch-action:none;
+  }
+  #hud{
+    position:absolute;
+    top:14px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(900px, calc(100vw - 24px));
+    text-align:center;
+    pointer-events:none;
+    text-shadow:0 3px 0 rgba(0,0,0,.45), 0 0 12px rgba(112,255,181,.5);
+    z-index:3;
+  }
+  .hudTop{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    flex-wrap:wrap;
+    padding:9px 16px;
+    border:2px solid rgba(112,255,181,.45);
+    border-radius:999px;
+    background:rgba(12,7,28,.64);
+    box-shadow:0 0 24px rgba(112,255,181,.16);
+    font-size:18px;
+    font-weight:900;
+    letter-spacing:.2px;
+  }
+  .targetLine{
+    margin:8px auto 0;
+    display:inline-block;
+    padding:8px 15px;
+    border-radius:14px;
+    background:rgba(16,8,31,.72);
+    border:1px solid rgba(255,216,102,.34);
+    color:#fff;
+    font-size:15px;
+    font-weight:800;
+  }
+  .targetBadge{
+    display:inline-block;
+    margin-left:6px;
+    padding:3px 9px;
+    border-radius:999px;
+    color:#10081f;
+    background:var(--gold);
+    box-shadow:0 0 16px currentColor;
+  }
+  #msg{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 50% 38%, rgba(112,255,181,.18), transparent 28%),
+      rgba(5,3,12,.78);
+    color:#fff;
+    text-align:center;
+    padding:24px;
+    box-sizing:border-box;
+    z-index:10;
+    backdrop-filter: blur(5px);
+  }
+  #msg h1{
+    font-size:clamp(42px,7vw,78px);
+    line-height:.95;
+    margin:.08em 0 .16em;
+    color:var(--gold);
+    text-shadow:0 5px 0 #3d215e, 0 0 26px rgba(255,216,102,.5);
+  }
+  #msg p{
+    font-size:clamp(18px,2.2vw,24px);
+    line-height:1.35;
+    max-width:760px;
+    margin:8px 0;
+  }
+  #msg .subStat{
+    color:var(--mint);
+    font-weight:900;
+  }
+  button{
+    margin-top:18px;
+    padding:13px 30px;
+    font-size:18px;
+    font-weight:900;
+    border:none;
+    border-radius:999px;
+    background:linear-gradient(135deg,#70ffb5,#9cff5d);
+    color:#10081f;
+    cursor:pointer;
+    box-shadow:0 8px 0 rgba(28,84,45,.8), 0 0 24px rgba(112,255,181,.35);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  button:hover{ transform:translateY(-2px); }
+  button:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(28,84,45,.8), 0 0 18px rgba(112,255,181,.35); }
+  #titleBug{
+    position:absolute;
+    left:18px;
+    bottom:14px;
+    z-index:2;
+    color:rgba(255,255,255,.8);
+    font-weight:900;
+    letter-spacing:.4px;
+    text-shadow:0 2px 8px rgba(0,0,0,.7);
+    pointer-events:none;
+  }
+  #titleBug small{
+    display:block;
+    color:rgba(112,255,181,.88);
+    font-weight:700;
+    letter-spacing:0;
+  }
+  @media (max-width:620px){
+    .hudTop{font-size:14px;gap:8px;padding:8px 10px;}
+    .targetLine{font-size:13px;}
+    #titleBug{display:none;}
+  }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="920" height="620"></canvas></div>
+<div id="hud"></div>
+<div id="titleBug"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<script>
+window.GAME_DESIGN = {"chosen_archetype": "magic_cat", "why": "Wave-based symbol matching turns Ramp AP Agents into fast triage: every invoice threat needs the right approve, reject, dedupe, or code action before it reaches finance.", "title": "Invoice Ghost Zapper", "subtitle": "Draw the right action to clear bills before they hit the ledger.", "hud_label": "Bills Cleared", "duration_seconds": 60, "target_score": 1500, "closing_stat": "Ramp AP Agents cleared {score} bills while finance only touched the exceptions.", "art_style": "spooky-cute flat cartoon with chunky invoice ghosts, bold outlines, purple-and-green night-office palette, glowing ledger UI, and playful finance details", "feature_explainer": {"headline": "Ramp AP Agents / Bill Pay", "bullets": ["AI agents sort real invoices from fraud and duplicates automatically.", "Line items get coded into the right buckets and routed for approval or rejection.", "Finance teams only step in for the exceptions."], "cta_text": "See Ramp Bill Pay", "learn_more_url": "https://ramp.com"}, "player": {"name": "Ramp AP Agent", "sprite": "player"}, "enemy_types": [{"name": "Legit Invoice", "sprite": "enemy_1", "action": "Approve stamp"}, {"name": "Fraud Invoice", "sprite": "enemy_2", "action": "Reject shield"}, {"name": "Duplicate Bill", "sprite": "enemy_3", "action": "Dedupe link"}, {"name": "Uncoded Line Item", "sprite": "enemy_4", "action": "Code bucket"}], "sprites": [{"name": "player", "role": "player", "prompt": "AI finance agent mascot holding a stamp and glowing pen"}, {"name": "enemy_1", "role": "enemy", "prompt": "smiling invoice sheet with checkmark seal"}, {"name": "enemy_2", "role": "enemy", "prompt": "invoice sheet with mask and warning triangle"}, {"name": "enemy_3", "role": "enemy", "prompt": "two overlapping invoice sheets with chain link icon"}, {"name": "enemy_4", "role": "enemy", "prompt": "receipt line items floating beside category buckets"}, {"name": "background", "role": "bg", "prompt": "nighttime accounts payable office with central ledger portal and scattered bill folders"}]};
+window.SPRITE_MANIFEST = {"sprites": {"player": "player.png", "enemy_1": "enemy_1.png", "enemy_2": "enemy_2.png", "enemy_3": "enemy_3.png", "enemy_4": "enemy_4.png", "background": "background.png"}};
+
+(function(){
+  function build(fe){
+    var wrap=document.createElement('div');
+    wrap.id='ramp-feature-card';
+    wrap.style.cssText='margin:16px auto 4px;padding:16px 20px;max-width:560px;text-align:left;'+
+      'background:#ffffff;color:#111;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:15px;line-height:1.5;';
+    var h='<div style="font-size:18px;font-weight:800;margin-bottom:8px;color:#1a7f37">'+
+      (fe.headline||'About this Ramp launch')+'</div>';
+    if(fe.bullets&&fe.bullets.length){ h+='<ul style="margin:0 0 10px 18px;padding:0">';
+      fe.bullets.forEach(function(b){ h+='<li style="margin:3px 0">'+b+'</li>'; }); h+='</ul>'; }
+    if(fe.learn_more_url){ h+='<a href="'+fe.learn_more_url+'" target="_blank" rel="noopener" '+
+      'style="display:inline-block;margin-top:4px;padding:8px 16px;background:#1a7f37;color:#fff;'+
+      'border-radius:20px;text-decoration:none;font-weight:700">'+(fe.cta_text||'Learn more')+' →</a>'; }
+    wrap.innerHTML=h; return wrap;
+  }
+  function inject(){
+    var fe=(window.GAME_DESIGN||{}).feature_explainer; if(!fe) return;
+    var m=document.getElementById('msg'); if(!m) return;
+    var visible=getComputedStyle(m).display!=='none';
+    if(visible && !document.getElementById('ramp-feature-card')){
+      var btn=m.querySelector('button'); var card=build(fe);
+      if(btn) m.insertBefore(card,btn); else m.appendChild(card);
+    }
+  }
+  function start(){
+    var m=document.getElementById('msg');
+    if(m){ new MutationObserver(inject).observe(m,{attributes:true,attributeFilter:['style','class']}); }
+    // Fallback poll in case the overlay is toggled by other means.
+    setInterval(inject,600);
+  }
+  if(document.readyState!=='loading') start(); else document.addEventListener('DOMContentLoaded',start);
+})();
+
+</script>
+
+<script>
+/*
+  ARCHETYPE: Magic Cat Academy — enemies approach the center; click the one matching the
+  highlighted target type to zap it. Themed as Ramp AP Agents triaging invoice ghosts.
+*/
+const DEFAULT_DESIGN = {
+  title:"Invoice Ghost Zapper",
+  subtitle:"Draw the right action to clear bills before they hit the ledger.",
+  hud_label:"Bills Cleared",
+  duration_seconds:60,
+  target_score:1500,
+  closing_stat:"Ramp AP Agents cleared {score} bills while finance only touched the exceptions.",
+  player:{name:"Ramp AP Agent",sprite:"player"},
+  enemy_types:[
+    {name:"Legit Invoice",sprite:"enemy_1",action:"Approve stamp"},
+    {name:"Fraud Invoice",sprite:"enemy_2",action:"Reject shield"},
+    {name:"Duplicate Bill",sprite:"enemy_3",action:"Dedupe link"},
+    {name:"Uncoded Line Item",sprite:"enemy_4",action:"Code bucket"}
+  ]
+};
+const DEFAULT_MANIFEST = {sprites:{
+  player:"player.png",
+  enemy_1:"enemy_1.png",
+  enemy_2:"enemy_2.png",
+  enemy_3:"enemy_3.png",
+  enemy_4:"enemy_4.png",
+  background:"background.png"
+}};
+
+const D = Object.assign({}, DEFAULT_DESIGN, window.GAME_DESIGN || {});
+D.player = Object.assign({}, DEFAULT_DESIGN.player, (window.GAME_DESIGN && window.GAME_DESIGN.player) || {});
+D.enemy_types = ((window.GAME_DESIGN && window.GAME_DESIGN.enemy_types && window.GAME_DESIGN.enemy_types.length)
+  ? window.GAME_DESIGN.enemy_types
+  : DEFAULT_DESIGN.enemy_types);
+
+const manifestObj = window.SPRITE_MANIFEST || DEFAULT_MANIFEST;
+const M = (manifestObj && manifestObj.sprites) || {};
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const hud = document.getElementById('hud');
+const titleBug = document.getElementById('titleBug');
+
+document.title = D.title || DEFAULT_DESIGN.title;
+titleBug.innerHTML = `${escapeHTML(D.title || "Invoice Ghost Zapper")}<small>${escapeHTML(D.subtitle || "")}</small>`;
+
+const rawTypes = (D.enemy_types && D.enemy_types.length) ? D.enemy_types
+              : (D.good_items && D.good_items.length ? D.good_items : DEFAULT_DESIGN.enemy_types);
+const types = rawTypes.map((t,i)=>({
+  name:t.name || `Invoice ${i+1}`,
+  sprite:t.sprite || `enemy_${i+1}`,
+  action:t.action || t.name || `Action ${i+1}`
+}));
+
+const DURATION = Number(D.duration_seconds) || 60;
+const TARGET = Number(D.target_score) || 1500;
+const CLEAR_VALUE = Math.max(50, Math.round((TARGET / 20) / 25) * 25);
+const MAX_LIVES = 4;
+
+const COLORS = ['#70ffb5','#ff596d','#72dcff','#ffd866','#ff8cff','#9cff5d'];
+const DARKS  = ['#0f4a35','#5b1423','#103e55','#594414','#4d1c58','#31591a'];
+
+const sprites = {};
+for (const k in M) {
+  const img = new Image();
+  img.decoding = "async";
+  img.onload = () => img.ok = true;
+  img.onerror = () => img.bad = true;
+  img.src = 'sprites/' + M[k];
+  sprites[k] = img;
+}
+function spr(n){
+  const i = sprites[n];
+  return (i && !i.bad && i.complete && i.naturalWidth) ? i : null;
+}
+
+let enemies, particles, floating, score, cleared, lives, timeLeft, spawnT, target, running, last;
+let shake = 0, flash = 0, combo = 0, targetPulse = 0, zapLines = [];
+
+function reset(){
+  enemies = [];
+  particles = [];
+  floating = [];
+  zapLines = [];
+  score = 0;
+  cleared = 0;
+  lives = MAX_LIVES;
+  timeLeft = DURATION;
+  spawnT = .3;
+  running = true;
+  combo = 0;
+  shake = 0;
+  flash = 0;
+  last = performance.now();
+  pickTarget(true);
+}
+
+function pickTarget(forceDifferent){
+  const old = target;
+  if (types.length <= 1) target = 0;
+  else {
+    do target = Math.floor(Math.random() * types.length);
+    while(forceDifferent && target === old);
+  }
+  targetPulse = .5;
+}
+
+function spawn(forceTarget=false){
+  const t = forceTarget ? target : Math.floor(Math.random() * types.length);
+  const a = Math.random() * Math.PI * 2;
+  const r = Math.max(cv.width, cv.height) / 2 + 76;
+  const wob = (Math.random() * 2 - 1) * .8;
+  enemies.push({
+    t, a, r,
+    wob,
+    phase: Math.random() * Math.PI * 2,
+    size: 62 + Math.random() * 10,
+    spin: (Math.random() * 2 - 1) * .18,
+    born: performance.now()
+  });
+}
+
+function screenToCanvas(e){
+  const rect = cv.getBoundingClientRect();
+  const touch = e.touches && e.touches[0] ? e.touches[0] : e;
+  return {
+    x:(touch.clientX - rect.left) * (cv.width / rect.width),
+    y:(touch.clientY - rect.top) * (cv.height / rect.height)
+  };
+}
+
+function handleZap(e){
+  if(!running) return;
+  e.preventDefault();
+  const p = screenToCanvas(e);
+  const mx = p.x, my = p.y;
+
+  for(let i=enemies.length-1; i>=0; i--){
+    const en = enemies[i];
+    const pos = enemyPos(en);
+    const hit = Math.hypot(mx - pos.x, my - pos.y) < en.size * .58;
+    if(hit){
+      if(en.t === target){
+        const gain = CLEAR_VALUE + Math.min(100, combo * 10);
+        score += gain;
+        cleared++;
+        combo++;
+        burst(pos.x, pos.y, COLORS[en.t % COLORS.length], 22, 1.15);
+        floating.push({x:pos.x,y:pos.y-16,txt:`+${gain}`,life:.8,color:COLORS[en.t % COLORS.length]});
+        zapLines.push({x1:cx(),y1:cy(),x2:pos.x,y2:pos.y,life:.18,color:COLORS[en.t % COLORS.length]});
+        enemies.splice(i,1);
+        flash = .12;
+        pickTarget(true);
+
+        if(score >= TARGET) {
+          score = Math.max(score, TARGET);
+          end(true);
+        }
+      } else {
+        combo = 0;
+        lives--;
+        shake = .35;
+        burst(pos.x, pos.y, '#ff596d', 16, .9);
+        floating.push({x:pos.x,y:pos.y-10,txt:'Wrong action!',life:.9,color:'#ff596d'});
+        if(lives <= 0) end(false);
+      }
+      return;
+    }
+  }
+}
+cv.addEventListener('click', handleZap);
+cv.addEventListener('touchstart', handleZap, {passive:false});
+
+function update(dt){
+  if(!running) return;
+
+  timeLeft -= dt;
+  if(timeLeft <= 0){
+    timeLeft = 0;
+    end(score >= TARGET);
+    return;
+  }
+
+  const elapsed = DURATION - timeLeft;
+  spawnT -= dt;
+  if(spawnT <= 0){
+    const forceTarget = Math.random() < .48 || !enemies.some(e => e.t === target);
+    spawn(forceTarget);
+    if(elapsed > 18 && Math.random() < .32) spawn(false);
+    if(elapsed > 38 && Math.random() < .22) spawn(false);
+    spawnT = Math.max(.38, 1.05 - elapsed * .012);
+  }
+
+  const sp = 42 + elapsed * 1.08;
+  for(const en of enemies){
+    en.r -= sp * dt;
+    en.a += en.wob * dt * .08;
+    en.phase += dt * 4;
+  }
+
+  for(let i=enemies.length-1; i>=0; i--){
+    if(enemies[i].r <= 54){
+      const p = enemyPos(enemies[i]);
+      lives--;
+      combo = 0;
+      shake = .45;
+      burst(p.x, p.y, '#ff596d', 18, 1);
+      floating.push({x:p.x,y:p.y-16,txt:'Hit ledger!',life:.95,color:'#ff596d'});
+      enemies.splice(i,1);
+      if(lives <= 0){
+        end(false);
+        return;
+      }
+    }
+  }
+
+  updateParticles(dt);
+  shake = Math.max(0, shake - dt);
+  flash = Math.max(0, flash - dt);
+  targetPulse = Math.max(0, targetPulse - dt);
+}
+
+function updateParticles(dt){
+  for(const p of particles){
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 75 * dt;
+    p.life -= dt;
+    p.rot += p.rv * dt;
+  }
+  particles = particles.filter(p => p.life > 0);
+
+  for(const f of floating){
+    f.y -= 44 * dt;
+    f.life -= dt;
+  }
+  floating = floating.filter(f => f.life > 0);
+
+  for(const z of zapLines) z.life -= dt;
+  zapLines = zapLines.filter(z => z.life > 0);
+}
+
+function burst(x,y,color,count,power){
+  for(let i=0;i<count;i++){
+    const a = Math.random() * Math.PI * 2;
+    const v = (70 + Math.random() * 160) * power;
+    particles.push({
+      x,y,
+      vx:Math.cos(a)*v,
+      vy:Math.sin(a)*v - 30,
+      life:.35 + Math.random()*.45,
+      max:.8,
+      size:3 + Math.random()*6,
+      color,
+      rot:Math.random()*Math.PI,
+      rv:(Math.random()*2-1)*8
+    });
+  }
+}
+
+function cx(){ return cv.width/2; }
+function cy(){ return cv.height/2 + 28; }
+
+function enemyPos(en){
+  const wiggle = Math.sin(en.phase) * 8;
+  return {
+    x: cx() + Math.cos(en.a) * (en.r + wiggle),
+    y: cy() + Math.sin(en.a) * (en.r + wiggle * .7)
+  };
+}
+
+function draw(){
+  ctx.save();
+  if(shake > 0){
+    const mag = shake * 12;
+    ctx.translate((Math.random()*2-1)*mag, (Math.random()*2-1)*mag);
+  }
+
+  ctx.clearRect(0,0,cv.width,cv.height);
+  drawBackground();
+
+  drawLedgerPortal();
+
+  for(const en of enemies) drawEnemy(en);
+  drawZaps();
+  drawPlayer();
+  drawParticles();
+  drawFloating();
+
+  if(flash > 0){
+    ctx.fillStyle = `rgba(112,255,181,${flash * .45})`;
+    ctx.fillRect(0,0,cv.width,cv.height);
+  }
+
+  ctx.restore();
+
+  const targetColor = COLORS[target % COLORS.length];
+  const action = types[target] && types[target].action ? types[target].action : types[target].name;
+  hud.innerHTML =
+    `<div class="hudTop">
+      <span>${escapeHTML(D.hud_label || "Bills Cleared")}: ${score}/${TARGET}</span>
+      <span>${'💚'.repeat(Math.max(0,lives))}${'🖤'.repeat(Math.max(0,MAX_LIVES-lives))}</span>
+      <span>⏱ ${Math.ceil(timeLeft)}s</span>
+      <span>Combo x${combo}</span>
+    </div>
+    <br>
+    <div class="targetLine">Zap invoices needing:
+      <span class="targetBadge" style="background:${targetColor};box-shadow:0 0 ${targetPulse ? 26 : 14}px ${targetColor};">${escapeHTML(action)}</span>
+    </div>`;
+}
+
+function drawBackground(){
+  const bg = spr('background');
+  if(bg){
+    ctx.drawImage(bg,0,0,cv.width,cv.height);
+    ctx.fillStyle = 'rgba(14,7,32,.35)';
+    ctx.fillRect(0,0,cv.width,cv.height);
+  } else {
+    const g = ctx.createRadialGradient(cx(), cy()-90, 60, cx(), cy(), 520);
+    g.addColorStop(0, '#493073');
+    g.addColorStop(.45, '#241348');
+    g.addColorStop(1, '#0e071c');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,cv.width,cv.height);
+
+    ctx.fillStyle = 'rgba(112,255,181,.08)';
+    for(let i=0;i<22;i++){
+      const x = (i*149)%cv.width;
+      const y = 120 + ((i*83)%430);
+      roundRect(x,y,76,42,8,true,false);
+      ctx.strokeStyle = 'rgba(112,255,181,.08)';
+      ctx.strokeRect(x+8,y+9,44,4);
+      ctx.strokeRect(x+8,y+20,58,4);
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = .42;
+  for(let i=0;i<70;i++){
+    const x = (i*97 + performance.now()*.008) % cv.width;
+    const y = (i*53) % cv.height;
+    ctx.fillStyle = i%3 ? 'rgba(255,255,255,.22)' : 'rgba(112,255,181,.35)';
+    ctx.beginPath();
+    ctx.arc(x,y,(i%4)+.8,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  ctx.fillRect(0, cv.height-72, cv.width, 72);
+}
+
+function drawLedgerPortal(){
+  const x = cx(), y = cy();
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.translate(x,y);
+
+  for(let i=4;i>=0;i--){
+    ctx.strokeStyle = `rgba(112,255,181,${.08+i*.035})`;
+    ctx.lineWidth = 12 - i*1.6;
+    ctx.beginPath();
+    ctx.arc(0,0,72 + i*18 + Math.sin(t*2+i)*3,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  ctx.rotate(t*.18);
+  ctx.strokeStyle = 'rgba(255,216,102,.5)';
+  ctx.lineWidth = 3;
+  for(let i=0;i<4;i++){
+    ctx.rotate(Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(0,-112);
+    ctx.lineTo(0,-90);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x, y+74);
+  ctx.fillStyle = 'rgba(10,5,22,.8)';
+  ctx.strokeStyle = 'rgba(112,255,181,.55)';
+  ctx.lineWidth = 3;
+  roundRect(-104,-22,208,46,14,true,true);
+  ctx.fillStyle = '#70ffb5';
+  ctx.font = '900 15px Trebuchet MS';
+  ctx.textAlign = 'center';
+  ctx.fillText('LEDGER PORTAL',0,5);
+  ctx.restore();
+}
+
+function drawPlayer(){
+  const x = cx(), y = cy();
+  const bob = Math.sin(performance.now()/260) * 4;
+  ctx.save();
+  ctx.translate(x,y+bob);
+
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath();
+  ctx.ellipse(0,52,62,17,0,0,Math.PI*2);
+  ctx.fill();
+
+  drawAt(0,0,(D.player && D.player.sprite) || 'player','#70ffb5',98,'player');
+
+  ctx.save();
+  ctx.rotate(Math.sin(performance.now()/180)*.05);
+  ctx.strokeStyle = '#ffd866';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(36,-12);
+  ctx.lineTo(72,-42);
+  ctx.stroke();
+  ctx.fillStyle = '#70ffb5';
+  ctx.beginPath();
+  ctx.arc(76,-45,8,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function drawEnemy(en){
+  const p = enemyPos(en);
+  const typ = types[en.t];
+  const col = COLORS[en.t % COLORS.length];
+  const dark = DARKS[en.t % DARKS.length];
+  const s = en.size;
+  const isTarget = en.t === target;
+
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.rotate(Math.sin(en.phase)*.08 + en.spin);
+
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  ctx.beginPath();
+  ctx.ellipse(4, s*.43, s*.38, s*.13, 0,0,Math.PI*2);
+  ctx.fill();
+
+  if(isTarget){
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 4 + Math.sin(performance.now()/90)*1.5;
+    ctx.globalAlpha = .9;
+    ctx.beginPath();
+    ctx.arc(0,0,s*.58,0,Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  drawAt(0,0,typ.sprite || `enemy_${en.t+1}`,col,s,'enemy',en.t);
+
+  ctx.fillStyle = 'rgba(16,8,31,.86)';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 2;
+  roundRect(-s*.62, -s*.72, s*1.24, 23, 10, true, true);
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 10px Trebuchet MS';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(shortLabel(typ.action || typ.name), 0, -s*.72 + 12);
+
+  ctx.restore();
+}
+
+function drawZaps(){
+  for(const z of zapLines){
+    const a = Math.max(0,z.life / .18);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    jaggedLine(z.x1,z.y1,z.x2,z.y2,5);
+    ctx.stroke();
+    ctx.strokeStyle = z.color;
+    ctx.lineWidth = 3;
+    jaggedLine(z.x1,z.y1,z.x2,z.y2,5);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function jaggedLine(x1,y1,x2,y2,steps){
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  for(let i=1;i<steps;i++){
+    const t = i/steps;
+    const x = x1 + (x2-x1)*t + (Math.random()*2-1)*12;
+    const y = y1 + (y2-y1)*t + (Math.random()*2-1)*12;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(x2,y2);
+}
+
+function drawParticles(){
+  for(const p of particles){
+    const a = Math.max(0, p.life / p.max);
+    ctx.save();
+    ctx.globalAlpha = Math.min(1,a);
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    roundRect(-p.size/2,-p.size/2,p.size,p.size,2,true,false);
+    ctx.restore();
+  }
+}
+
+function drawFloating(){
+  for(const f of floating){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, f.life / .8);
+    ctx.fillStyle = f.color;
+    ctx.strokeStyle = 'rgba(16,8,31,.95)';
+    ctx.lineWidth = 5;
+    ctx.font = '900 20px Trebuchet MS';
+    ctx.textAlign = 'center';
+    ctx.strokeText(f.txt,f.x,f.y);
+    ctx.fillText(f.txt,f.x,f.y);
+    ctx.restore();
+  }
+}
+
+function drawAt(x,y,name,fallback,size,kind,typeIndex=0){
+  const s = spr(name);
+  if(s){
+    ctx.drawImage(s,x-size/2,y-size/2,size,size);
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  if(kind === 'player'){
+    ctx.fillStyle = 'rgba(112,255,181,.25)';
+    ctx.beginPath();
+    ctx.arc(0,0,size*.46,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#70ffb5';
+    ctx.strokeStyle = '#10281f';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0,0,size*.34,0,Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#10081f';
+    ctx.beginPath(); ctx.arc(-13,-7,5,0,Math.PI*2); ctx.arc(13,-7,5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#10081f';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0,5,16,0,Math.PI); ctx.stroke();
+
+    ctx.fillStyle = '#ffd866';
+    roundRect(-30,-47,60,24,8,true,false);
+    ctx.fillStyle = '#10081f';
+    ctx.font = '900 13px Trebuchet MS';
+    ctx.textAlign='center';
+    ctx.fillText('AP',0,-30);
+  } else {
+    const col = fallback;
+    ctx.fillStyle = '#fff8e7';
+    ctx.strokeStyle = '#161022';
+    ctx.lineWidth = 4;
+    roundRect(-size*.33,-size*.42,size*.66,size*.8,8,true,true);
+
+    ctx.fillStyle = col;
+    ctx.globalAlpha = .25;
+    roundRect(-size*.24,-size*.24,size*.48,7,3,true,false);
+    roundRect(-size*.24,-size*.10,size*.42,7,3,true,false);
+    roundRect(-size*.24,size*.04,size*.35,7,3,true,false);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = col;
+    if(typeIndex === 0){
+      ctx.lineWidth = 5; ctx.strokeStyle = col;
+      ctx.beginPath(); ctx.moveTo(-14,2); ctx.lineTo(-3,14); ctx.lineTo(18,-14); ctx.stroke();
+    } else if(typeIndex === 1){
+      ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(22,18); ctx.lineTo(-22,18); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.fillRect(-2,-6,4,12); ctx.fillRect(-2,10,4,4);
+    } else if(typeIndex === 2){
+      ctx.strokeStyle = col; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(-10,0,13,-.8,.8); ctx.stroke();
+      ctx.beginPath(); ctx.arc(10,0,13,Math.PI-.8,Math.PI+.8); ctx.stroke();
+    } else {
+      ctx.fillRect(-18,-10,13,22); ctx.fillRect(-3,-18,13,30); ctx.fillRect(12,-4,13,16);
+    }
+  }
+
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r,fill,stroke){
+  const rr = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
+
+function shortLabel(s){
+  s = String(s || '');
+  return s.length > 18 ? s.slice(0,17) + '…' : s;
+}
+
+function escapeHTML(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function loop(now){
+  const dt = Math.min((now-last)/1000, .05);
+  last = now;
+  update(dt);
+  draw();
+  if(running) requestAnimationFrame(loop);
+}
+
+function end(won){
+  if(!running) return;
+  running = false;
+
+  const title = won ? 'Ledger Saved!' : 'Ledger Overrun!';
+  const stat = (D.closing_stat || DEFAULT_DESIGN.closing_stat || 'Cleared {score} bills.')
+    .replace(/\{score\}/g, score)
+    .replace(/X/g, score);
+
+  document.getElementById('msgTitle').textContent = title;
+  document.getElementById('msgBody').innerHTML = won
+    ? `<span class="subStat">${escapeHTML(stat)}</span><br>Final score: ${score} • Invoices zapped: ${cleared}`
+    : `Too many invoice ghosts reached the ledger.<br><span class="subStat">Final score: ${score} • Invoices zapped: ${cleared}</span><br>Try again and match each action before it hits finance.`;
+
+  document.getElementById('msg').style.display='flex';
+}
+
+function restart(){
+  document.getElementById('msg').style.display='none';
+  reset();
+  requestAnimationFrame(loop);
+}
+
+reset();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

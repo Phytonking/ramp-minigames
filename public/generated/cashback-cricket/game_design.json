@@ -1,0 +1,80 @@
+{
+  "chosen_archetype": "cricket",
+  "why": "A timing-based batting game best dramatizes paying each card-eligible invoice exactly on its due date to capture cashback without paying early or missing the window.",
+  "title": "Cashback Cricket",
+  "subtitle": "Swing on the due date and send every eligible bill for cashback.",
+  "hud_label": "Cashback",
+  "duration_seconds": 60,
+  "target_score": 1500,
+  "closing_stat": "You captured {score} cashback points by paying right on time.",
+  "feature_explainer": {
+    "headline": "Ramp Automated Cashback / Card-Eligible Bill Pay",
+    "bullets": [
+      "Ramp automatically pays card-eligible invoices with the Ramp card right on their due date.",
+      "Every eligible bill earns cashback instead of leaving money on the table.",
+      "The goal is to pay inside the cashback window without paying early and wasting float.",
+      "Miss the window and you lose the cashback."
+    ],
+    "cta_text": "See Automated Cashback",
+    "learn_more_url": "https://ramp.com"
+  },
+  "art_style": "clean flat cartoon cricket doodle with bright office greens, bold outlines, simple invoice-and-card characters, and playful cashback accents",
+  "player": {
+    "name": "Ramp Card Batter",
+    "sprite": "player"
+  },
+  "good_items": [
+    {
+      "name": "Due-Date Invoice Pitch",
+      "sprite": "good_1",
+      "points": 100
+    },
+    {
+      "name": "Perfect Cashback Window",
+      "sprite": "good_2",
+      "points": 250
+    }
+  ],
+  "bad_items": [
+    {
+      "name": "Too-Early Payment",
+      "sprite": "bad_1"
+    },
+    {
+      "name": "Missed Due Date",
+      "sprite": "bad_2"
+    }
+  ],
+  "sprites": [
+    {
+      "name": "player",
+      "role": "player",
+      "prompt": "Ramp card batter holding a payment bat"
+    },
+    {
+      "name": "good_1",
+      "role": "good",
+      "prompt": "invoice ball with due date label"
+    },
+    {
+      "name": "good_2",
+      "role": "good",
+      "prompt": "glowing cashback window over a calendar date"
+    },
+    {
+      "name": "bad_1",
+      "role": "bad",
+      "prompt": "early payment clock with leaking coins"
+    },
+    {
+      "name": "bad_2",
+      "role": "bad",
+      "prompt": "past due invoice with broken cashback coin"
+    },
+    {
+      "name": "background",
+      "role": "bg",
+      "prompt": "office cricket pitch with calendar scoreboard and invoice stacks"
+    }
+  ]
+}

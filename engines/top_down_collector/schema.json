@@ -1,0 +1,69 @@
+{
+  "description": "Top-down collector/dodger. Player steers to collect items and avoid enemies.",
+  "properties": {
+    "player": {
+      "type": "object",
+      "properties": {
+        "speed": {"type": "number", "min": 100, "max": 600, "default": 300, "description": "pixels per second"},
+        "size": {"type": "number", "min": 20, "max": 80, "default": 40, "description": "collision radius"},
+        "magnet_range": {"type": "number", "min": 0, "max": 200, "default": 60, "description": "auto-collect radius, 0 = no magnet"}
+      }
+    },
+    "collectibles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "points": {"type": "number", "min": 1, "max": 100},
+          "speed": {"type": "number", "min": 20, "max": 300},
+          "size": {"type": "number", "min": 10, "max": 50},
+          "spawn_weight": {"type": "number", "min": 0, "max": 1},
+          "sprite_index": {"type": "integer", "min": 0}
+        }
+      }
+    },
+    "enemies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "damage": {"type": "number", "min": 1, "max": 100},
+          "speed": {"type": "number", "min": 20, "max": 400},
+          "size": {"type": "number", "min": 15, "max": 100},
+          "spawn_weight": {"type": "number", "min": 0, "max": 1},
+          "behavior": {"type": "string", "enum": ["chase", "patrol", "stationary", "random_walk"]},
+          "sprite_index": {"type": "integer", "min": 0}
+        }
+      }
+    },
+    "spawning": {
+      "type": "object",
+      "properties": {
+        "initial_spawn_interval": {"type": "number", "min": 0.1, "max": 5.0, "default": 1.5, "description": "seconds between spawns at start"},
+        "min_spawn_interval": {"type": "number", "min": 0.05, "max": 2.0, "default": 0.3},
+        "difficulty_ramp_duration": {"type": "number", "min": 10, "max": 120, "default": 45, "description": "seconds to reach min_spawn_interval"},
+        "max_active_objects": {"type": "integer", "min": 5, "max": 100, "default": 40},
+        "spawn_area_padding": {"type": "number", "min": 50, "max": 300, "default": 100, "description": "pixels beyond screen edge for spawning"}
+      }
+    },
+    "win_condition": {
+      "type": "object",
+      "properties": {
+        "type": {"type": "string", "enum": ["score", "survival", "collection"]},
+        "target_score": {"type": "number", "min": 100, "max": 10000, "default": 1000},
+        "survival_duration": {"type": "number", "min": 15, "max": 120, "default": 60}
+      }
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string", "maxLength": 40},
+        "score_label": {"type": "string", "maxLength": 20},
+        "show_timer": {"type": "boolean"},
+        "color_scheme": {"type": "string", "enum": ["neon_green_black", "white_black", "custom"]}
+      }
+    }
+  }
+}

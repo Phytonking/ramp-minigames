@@ -1,9 +1,16 @@
 import { getVisibleGames } from "@/lib/games";
+import { getGeneratedGames } from "@/lib/generated";
 import { GameCard } from "@/components/arcade/GameCard";
 import { LoginBanner } from "@/components/arcade/LoginBanner";
 
+// Re-read the generated-games manifest on every request so Studio-shipped games
+// show up in the gallery immediately.
+export const dynamic = "force-dynamic";
+
 export default async function ArcadePage() {
-  const games = await getVisibleGames();
+  const dbGames = await getVisibleGames();
+  // Pipeline-generated games lead the gallery, then the DB-backed games.
+  const allGames = [...getGeneratedGames(), ...dbGames];
 
   return (
     <div className="min-h-screen">
@@ -20,12 +27,12 @@ export default async function ArcadePage() {
             </p>
           </div>
           <span className="hidden font-mono text-[11px] uppercase tracking-widest text-fg-muted sm:inline">
-            {games.length} games
+            {allGames.length} games
           </span>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((game) => (
+          {allGames.map((game) => (
             <GameCard key={game.slug} game={game} />
           ))}
         </div>

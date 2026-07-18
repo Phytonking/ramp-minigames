@@ -1,0 +1,55 @@
+{
+  "games": [
+    {
+      "slug": "invoice-ghost-zapper",
+      "title": "Invoice Ghost Zapper",
+      "tagline": "Draw the right action to clear bills before they hit the ledger.",
+      "teaches": "Ramp's AP agents sort real invoices from fraud and duplicates, so finance only touches the exceptions.",
+      "mechanic": "reflex-match",
+      "mechanicLabel": "Match the right action under waves",
+      "closingStat": "Ramp AP Agents cleared {score} bills while finance only touched the exceptions.",
+      "source": {
+        "report": "AP Agents / Bill Pay launch",
+        "excerpt": "Ramp's AI agents sort real invoices from fraud and duplicates, code line items into buckets, and route bills for approval under time pressure."
+      },
+      "status": "live",
+      "hardcoded": false,
+      "accent": "blaze",
+      "previewUrl": "/generated/invoice-ghost-zapper/index.html"
+    },
+    {
+      "slug": "cashback-cricket",
+      "title": "Cashback Cricket",
+      "tagline": "Swing on the due date and send every eligible bill for cashback.",
+      "teaches": "Ramp auto-pays card-eligible invoices right on their due date, so every eligible bill earns cashback instead of leaving money on the table.",
+      "mechanic": "cricket",
+      "mechanicLabel": "Timing-based precision",
+      "closingStat": "You captured {score} cashback points by paying right on time.",
+      "source": {
+        "report": "Automated Cashback / Card-Eligible Bill Pay",
+        "excerpt": "Ramp automatically pays card-eligible invoices on their due date so every eligible bill earns cashback — pay inside the window without paying early."
+      },
+      "status": "live",
+      "hardcoded": false,
+      "accent": "solar",
+      "previewUrl": "/generated/cashback-cricket/index.html"
+    },
+    {
+      "slug": "ramp-express-scope-sprint",
+      "title": "Ramp Express: Scope Sprint",
+      "tagline": "Catch the exact charge your agent card was made for — dodge everything else.",
+      "teaches": "Ramp issues scoped, single-purpose agent cards that only work for the exact charge they were created for; everything off-scope is a risk.",
+      "mechanic": "pony_express",
+      "mechanicLabel": "Side-scrolling catch & dodge",
+      "closingStat": "You safely captured {score} scoped charges without blowing the budget.",
+      "source": {
+        "report": "Agent Cards (Ramp Express)",
+        "excerpt": "Ramp issues scoped, single-purpose agent cards — collect the legitimate scoped charges and dodge open cards, duplicates, fakes, and expired tokens."
+      },
+      "status": "live",
+      "hardcoded": false,
+      "accent": "blaze",
+      "previewUrl": "/generated/ramp-express-scope-sprint/index.html"
+    }
+  ]
+}

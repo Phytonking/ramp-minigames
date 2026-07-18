@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cricket Skeleton</title>
+<style>
+  html,body{margin:0;height:100%;background:#2e7d32;font-family:'Trebuchet MS',sans-serif;overflow:hidden;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{background:linear-gradient(#7ec850,#4a9e34);box-shadow:0 8px 40px rgba(0,0,0,.4);border-radius:8px;}
+  #hud{position:absolute;top:16px;left:0;right:0;text-align:center;color:#fff;font-size:22px;font-weight:bold;pointer-events:none;text-shadow:0 1px 2px #0006;}
+  #msg{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:24px;}
+  #msg h1{font-size:44px;margin:.2em;} #msg p{font-size:20px;max-width:640px;}
+  button{margin-top:16px;padding:12px 28px;font-size:18px;border:none;border-radius:30px;background:#1565c0;color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="820" height="540"></canvas></div>
+<div id="hud"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ARCHETYPE: Cricket — timing. A ball approaches the strike zone; press SPACE/click at the right
+// moment. Perfect timing = big score. CODEGEN: theme the ball/bat/labels to the launch;
+// keep the timing mechanic (each "pitch" = an opportunity to act at the right moment).
+const D=window.GAME_DESIGN||{};
+const M=(window.SPRITE_MANIFEST&&window.SPRITE_MANIFEST.sprites)||{};
+const cv=document.getElementById('game'),ctx=cv.getContext('2d'),hud=document.getElementById('hud');
+const TARGET=D.target_score||600, MAX_MISS=3;
+const sprites={};for(const k in M){const i=new Image();i.src='sprites/'+M[k];sprites[k]=i;}
+function spr(n){const i=sprites[n];return (i&&i.complete&&i.naturalWidth)?i:null;}
+
+const ZONE=cv.width-180; // strike x
+let ball,score,misses,swung,running,last,pitchSpeed;
+function newBall(){ ball={x:120,y:cv.height/2+40}; swung=false; pitchSpeed=320+score*0.6; }
+function reset(){ score=0; misses=0; running=true; last=performance.now(); newBall(); }
+reset();
+
+function swing(){ if(!running||swung) return; swung=true;
+  const d=Math.abs(ball.x-ZONE);
+  if(d<28){ score+=100; flash('PERFECT! +100','#f6c945'); }
+  else if(d<70){ score+=50; flash('Good +50','#2ecc71'); }
+  else { misses++; flash('Missed','#e74c3c'); if(misses>=MAX_MISS){ end(score>=TARGET); return; } }
+  setTimeout(()=>{ if(running) newBall(); }, 500);
+  if(score>=TARGET) end(true);
+}
+addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault();swing();} });
+cv.addEventListener('click',swing);
+
+let fx='',fxc='#fff',fxT=0;
+function flash(t,c){ fx=t; fxc=c; fxT=0.6; }
+
+function update(dt){ if(!running) return;
+  if(fxT>0) fxT-=dt;
+  if(!swung){ ball.x+=pitchSpeed*dt;
+    if(ball.x>cv.width-40){ misses++; flash('Let it through','#e74c3c'); swung=true;
+      if(misses>=MAX_MISS){ end(score>=TARGET); return; } setTimeout(()=>{ if(running) newBall(); },400); }
+  }
+}
+function drawAt(x,y,n,fb,s){ const im=spr(n); if(im) ctx.drawImage(im,x-s/2,y-s/2,s,s);
+  else{ ctx.fillStyle=fb; ctx.beginPath(); ctx.arc(x,y,s/2,0,7); ctx.fill(); } }
+function draw(){ ctx.clearRect(0,0,cv.width,cv.height);
+  const bg=spr('background'); if(bg) ctx.drawImage(bg,0,0,cv.width,cv.height);
+  ctx.strokeStyle='#fff8'; ctx.lineWidth=3; ctx.strokeRect(ZONE-30,cv.height/2-40,60,160);
+  drawAt(ZONE+70,cv.height/2+40,(D.player&&D.player.sprite)||'player','#2c3e50',96); // batter
+  drawAt(ball.x,ball.y,(D.good_items&&D.good_items[0]&&D.good_items[0].sprite)||'ball','#fff',38);
+  if(fxT>0){ ctx.fillStyle=fxc; ctx.font='bold 34px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText(fx,cv.width/2,110); }
+  hud.textContent=`${D.hud_label||'Runs'}: ${score}/${TARGET}   Misses: ${misses}/${MAX_MISS}   [SPACE to swing]`;
+}
+function loop(now){ const dt=Math.min((now-last)/1000,.05); last=now; update(dt); draw(); if(running) requestAnimationFrame(loop); }
+function end(w){ running=false; document.getElementById('msgTitle').textContent=w?'YOU WIN!':'GAME OVER';
+  const stat=(D.closing_stat||'').replace('{score}',score).replace('X',score);
+  document.getElementById('msgBody').textContent=(w?stat:'')+`  (Score: ${score})`;
+  document.getElementById('msg').style.display='flex'; }
+function restart(){ document.getElementById('msg').style.display='none'; reset(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
