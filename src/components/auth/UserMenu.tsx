@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogIn, LogOut, User } from "lucide-react";
@@ -9,6 +10,14 @@ import { Button } from "@/components/ui/button";
 export function UserMenu() {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
+  const profileEnsured = useRef(false);
+
+  useEffect(() => {
+    if (session?.user && !profileEnsured.current) {
+      profileEnsured.current = true;
+      fetch("/api/auth/ensure-profile", { method: "POST" }).catch(() => {});
+    }
+  }, [session?.user]);
 
   if (isPending) {
     return <span className="h-7 w-16 animate-pulse rounded-[--radius-sm] bg-night-border" />;
@@ -26,6 +35,7 @@ export function UserMenu() {
           size="sm"
           onClick={async () => {
             await authClient.signOut();
+            profileEnsured.current = false;
             router.refresh();
           }}
         >

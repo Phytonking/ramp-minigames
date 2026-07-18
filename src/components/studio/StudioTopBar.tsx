@@ -124,11 +124,11 @@ function OperatorMenu() {
       {open && (
         <div className="absolute right-0 top-[calc(100%+8px)] w-60 overflow-hidden rounded-[--radius-md] border border-line bg-bg">
           <div className="border-b border-line px-4 py-3">
-            <p className="text-sm font-medium text-ink">Demo Operator</p>
-            <p className="font-mono text-xs text-ink-muted">operator@ramp.com</p>
+            <p className="text-sm font-medium text-ink">Admin</p>
+            <p className="font-mono text-xs text-ink-muted">admin</p>
             <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink-muted">
               <span className="size-1.5 rounded-full bg-solar" />
-              operator
+              admin
             </span>
           </div>
           <div className="p-1.5">

@@ -1,8 +1,6 @@
-/**
- * Shared game domain model — consumed by both the Arcade (consumer gallery)
- * and the Studio (generation cockpit). See PRD.md "The 3 Hardcoded Games"
- * and ramp-minigames-pitch.md "The Three Games".
- */
+import { db } from "@/lib/db";
+import { games as gamesTable } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
 
 export type GameMechanic =
   | "resource-sorting"
@@ -10,39 +8,47 @@ export type GameMechanic =
   | "timed-race"
   | string;
 
-export type GameStatus = "live" | "generating" | "draft";
+export type GameStatus = "live" | "draft" | "hidden";
 
 export type GameSource = {
-  /** The real Ramp launch this game was generated from. */
   report: string;
-  /** One-line description of the source excerpt. */
   excerpt: string;
 };
 
 export type Game = {
   slug: string;
   title: string;
-  /** Short tagline shown on the card. */
   tagline: string;
-  /** The core insight the game teaches. */
   teaches: string;
   mechanic: GameMechanic;
-  /** Human-readable mechanic label for tags/pills. */
   mechanicLabel: string;
-  /** Closing stat shown on the share screen (X is filled at runtime). */
   closingStat: string;
   source: GameSource;
   status: GameStatus;
-  /** Whether this is one of the 3 handcrafted games or a pipeline output. */
   hardcoded: boolean;
-  /** Accent used for the card's live thumbnail wash. */
   accent: "solar" | "blaze";
-  /** Daytona preview URL for generated games (null for local/hardcoded). */
   previewUrl?: string | null;
 };
 
-/** The three handcrafted flagship games (the "proof the system produces varied output"). */
-export const HARDCODED_GAMES: Game[] = [
+function rowToGame(row: typeof gamesTable.$inferSelect): Game {
+  return {
+    slug: row.slug,
+    title: row.title,
+    tagline: row.tagline,
+    teaches: row.teaches,
+    mechanic: row.mechanic,
+    mechanicLabel: row.mechanicLabel,
+    closingStat: row.closingStat,
+    source: { report: row.sourceReport, excerpt: row.sourceExcerpt },
+    status: row.status as GameStatus,
+    hardcoded: row.hardcoded,
+    accent: row.accent as "solar" | "blaze",
+    previewUrl: row.previewUrl,
+  };
+}
+
+/** Hardcoded fallback — used if DB is unreachable. */
+const FALLBACK_GAMES: Game[] = [
   {
     slug: "spend-sort",
     title: "Spend Sort",
@@ -68,7 +74,7 @@ export const HARDCODED_GAMES: Game[] = [
     teaches: "Ramp’s agents handle routine spend so humans only deal with exceptions.",
     mechanic: "judgment-under-volume",
     mechanicLabel: "Judgment under volume",
-    closingStat: "You reviewed {N} requests; the agent handled {M} — ~{Z} hours saved.",
+    closingStat: "You reviewed {X} requests; the agent handled the rest.",
     source: {
       report: "AI agents for procurement launch",
       excerpt:
@@ -86,7 +92,7 @@ export const HARDCODED_GAMES: Game[] = [
     teaches: "The original, boring, real pain Ramp solved.",
     mechanic: "timed-race",
     mechanicLabel: "Head-to-head timed race",
-    closingStat: "Manual: {X}m {Y}s · Automated: {Z}s.",
+    closingStat: "Manual: {X}s · Automated: instant.",
     source: {
       report: "Original expense / receipt automation product",
       excerpt:
@@ -99,6 +105,43 @@ export const HARDCODED_GAMES: Game[] = [
   },
 ];
 
-export function getGame(slug: string): Game | undefined {
-  return HARDCODED_GAMES.find((g) => g.slug === slug);
+export async function getVisibleGames(): Promise<Game[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(gamesTable)
+      .where(eq(gamesTable.status, "live"))
+      .orderBy(asc(gamesTable.sortOrder));
+    return rows.map(rowToGame);
+  } catch {
+    return FALLBACK_GAMES;
+  }
 }
+
+export async function getAllGames(): Promise<Game[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(gamesTable)
+      .orderBy(asc(gamesTable.sortOrder));
+    return rows.map(rowToGame);
+  } catch {
+    return FALLBACK_GAMES;
+  }
+}
+
+export async function getGame(slug: string): Promise<Game | undefined> {
+  try {
+    const rows = await db
+      .select()
+      .from(gamesTable)
+      .where(eq(gamesTable.slug, slug))
+      .limit(1);
+    return rows[0] ? rowToGame(rows[0]) : undefined;
+  } catch {
+    return FALLBACK_GAMES.find((g) => g.slug === slug);
+  }
+}
+
+/** @deprecated Use getVisibleGames() instead */
+export const HARDCODED_GAMES = FALLBACK_GAMES;

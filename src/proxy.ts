@@ -6,7 +6,7 @@ const studioMiddleware = auth.middleware({
 });
 
 export default function proxy(request: NextRequest) {
-  // Studio routes require operator session
+  // Studio routes require authenticated session
   if (request.nextUrl.pathname.startsWith("/studio")) {
     return studioMiddleware(request);
   }

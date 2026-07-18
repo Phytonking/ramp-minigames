@@ -9,8 +9,8 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session || session.role !== "operator") {
-    return NextResponse.json({ error: "operator access required" }, { status: 403 });
+  if (!session || session.role !== "admin") {
+    return NextResponse.json({ error: "admin access required" }, { status: 403 });
   }
 
   const { excerpt } = (await req.json()) as { excerpt?: string };

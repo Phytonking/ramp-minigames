@@ -1,27 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, Gamepad2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HARDCODED_GAMES } from "@/lib/games";
 import { RampMinigamesLogo } from "@/components/RampMinigamesLogo";
 
 export default function LandingPage() {
   return (
     <main className="flex-1">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-line bg-bg/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <RampMinigamesLogo />
-          <div className="flex items-center gap-6 text-sm text-ink-muted">
-            <Link href="/arcade" className="hover:text-ink transition-colors">
-              Arcade
-            </Link>
-            <Link href="/studio" className="hover:text-ink transition-colors">
-              Studio
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 pb-24 pt-16">
         <div className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs text-ink-muted">
@@ -86,44 +70,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Games preview */}
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <div className="flex items-end justify-between">
-          <h2 className="text-2xl font-medium tracking-[-0.02em]">
-            Made by the machine
-          </h2>
-          <Link
-            href="/arcade"
-            className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink"
-          >
-            All games <ArrowRight className="size-4" />
-          </Link>
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {HARDCODED_GAMES.map((g) => (
-            <Link
-              key={g.slug}
-              href={`/games/${g.slug}`}
-              className="group rounded-[--radius-md] border border-line bg-surface p-5 transition-colors hover:border-ink/30"
-            >
-              <div className="font-mono text-xs text-ink-muted">
-                {g.mechanicLabel}
-              </div>
-              <div className="mt-3 text-lg font-medium">{g.title}</div>
-              <p className="mt-1 text-sm text-ink-muted">{g.teaches}</p>
-              <div className="mt-4 inline-flex items-center gap-1 text-sm text-ink group-hover:gap-2 transition-all">
-                Play <ArrowRight className="size-4" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8 text-sm text-ink-muted">
-          <span>Ramp Minigames</span>
-          <span className="font-mono">one system · three games</span>
+        <div className="mx-auto max-w-5xl px-6 py-10">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <RampMinigamesLogo />
+            <div className="flex items-center gap-4">
+              {[
+                { handle: "Phytonking", href: "https://github.com/Phytonking" },
+                { handle: "ddouda123", href: "https://github.com/ddouda123" },
+                { handle: "nikhilkohli27", href: "https://github.com/nikhilkohli27" },
+                { handle: "yashbudd", href: "https://github.com/yashbudd" },
+              ].map(({ handle, href }) => (
+                <a
+                  key={handle}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-ink-muted transition-colors hover:text-ink"
+                >
+                  @{handle}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </footer>
     </main>

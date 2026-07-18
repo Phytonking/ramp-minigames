@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getGame, HARDCODED_GAMES } from "@/lib/games";
+import { getGame, getVisibleGames } from "@/lib/games";
 import { GameViewer } from "@/components/arcade/GameViewer";
 
-export function generateStaticParams() {
-  return HARDCODED_GAMES.map((game) => ({ slug: game.slug }));
+export async function generateStaticParams() {
+  const games = await getVisibleGames();
+  return games.map((game) => ({ slug: game.slug }));
 }
 
 export async function generateMetadata({
@@ -13,7 +14,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   if (!game) return { title: "Game not found — Ramp Minigames" };
   return {
     title: `${game.title} — Ramp Minigames`,
@@ -27,7 +28,7 @@ export default async function GamePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const game = getGame(slug);
+  const game = await getGame(slug);
   if (!game) notFound();
 
   return <GameViewer game={game} />;

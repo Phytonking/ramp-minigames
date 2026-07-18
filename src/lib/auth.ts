@@ -3,7 +3,7 @@
  * All routes/components should import from here, not from lib/auth/server directly.
  */
 
-export type Role = "operator" | "viewer";
+export type Role = "admin" | "public";
 
 export interface SessionUser {
   id: string;
@@ -12,18 +12,20 @@ export interface SessionUser {
   role: Role;
 }
 
-/** Cookie name kept for legacy compat (middleware still checks it during transition). */
-export const SESSION_COOKIE = "rmg_session";
-export const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
+const ADMIN_EMAILS = new Set([
+  "avi.agola@gmail.com",
+]);
 
-/** Whether a given email gets operator access (ramp.com employees). */
 export function roleForEmail(email: string): Role {
-  return email.trim().toLowerCase().endsWith("@ramp.com") ? "operator" : "viewer";
+  const e = email.trim().toLowerCase();
+  if (ADMIN_EMAILS.has(e)) return "admin";
+  if (e.endsWith("@ramp.com")) return "admin";
+  return "public";
 }
 
 export function sanitizeNext(
   next: string | null | undefined,
-  fallback = "/studio"
+  fallback = "/arcade"
 ): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
   return next;
@@ -34,7 +36,6 @@ export function sanitizeNext(
  * Returns null when no session exists or auth env vars are missing.
  */
 export async function getSession(): Promise<SessionUser | null> {
-  // Guard: if Neon Auth isn't configured yet, fail gracefully
   if (!process.env.NEON_AUTH_BASE_URL || !process.env.NEON_AUTH_COOKIE_SECRET) {
     return null;
   }

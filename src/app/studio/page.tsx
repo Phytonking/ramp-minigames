@@ -4,16 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
-import {
-  ArrowRight,
-  FileText,
-  Link2,
-  RotateCw,
-  Sparkles,
-  Upload,
-} from "lucide-react";
+import { ArrowRight, FileText, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { HARDCODED_GAMES } from "@/lib/games";
 import {
@@ -298,11 +290,7 @@ function IntakeState({
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="mx-auto flex max-w-2xl flex-col items-center pt-10 text-center sm:pt-16"
     >
-      <Badge variant="outline" className="gap-1.5">
-        <Sparkles className="size-3" strokeWidth={1.75} />
-        Generation cockpit
-      </Badge>
-      <h1 className="mt-5 text-4xl font-medium tracking-[-0.03em] sm:text-5xl">
+      <h1 className="text-4xl font-medium tracking-[-0.03em] sm:text-5xl">
         Turn a launch into a game.
       </h1>
       <p className="mt-4 max-w-lg text-ink-muted">
@@ -322,18 +310,7 @@ function IntakeState({
             placeholder="Paste a launch excerpt, or drop a ramp.com/blog URL…"
             className="w-full resize-none bg-transparent px-4 py-3 text-left text-[15px] leading-relaxed text-ink outline-none placeholder:text-ink-muted"
           />
-          <div className="flex items-center justify-between px-2 pb-1 pt-1">
-            <div className="flex items-center gap-3 text-ink-muted">
-              <span className="inline-flex items-center gap-1.5 text-xs">
-                <Upload className="size-3.5" strokeWidth={1.75} /> PDF
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs">
-                <FileText className="size-3.5" strokeWidth={1.75} /> Excerpt
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs">
-                <Link2 className="size-3.5" strokeWidth={1.75} /> URL
-              </span>
-            </div>
+          <div className="flex items-center justify-end px-2 pb-1 pt-1">
             <Button
               variant="solar"
               onClick={onGenerate}
@@ -360,7 +337,6 @@ function IntakeState({
               onClick={() => setInput(g.source.excerpt)}
               className="group flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-left text-sm text-ink-muted transition-colors hover:border-ink/30 hover:text-ink"
             >
-              <span className="size-1.5 rounded-full bg-solar" />
               <span className="max-w-[16rem] truncate">{g.source.report}</span>
             </button>
           ))}

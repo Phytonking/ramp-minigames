@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const [row] = await db
       .insert(gameSessions)
       .values({
-        neonUserId: session?.email ?? null,
+        neonUserId: session?.id ?? null,
         gameSlug: body.gameSlug,
         score: body.score ?? null,
         durationMs: body.durationMs ?? null,
