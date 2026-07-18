@@ -11,6 +11,7 @@
 
 # Neon local context
 .neon
+skills-lock.json
 
 # OS
 .DS_Store
