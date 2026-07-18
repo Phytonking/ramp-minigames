@@ -8,7 +8,7 @@ import { appendGeneratedGame } from "@/lib/generated";
 // This route runs the real Python doodle pipeline (MAP -> ASSETS -> CODEGEN), which
 // can take several minutes, so it must run on the Node runtime with a long budget.
 export const runtime = "nodejs";
-export const maxDuration = 800;
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 const ROOT = process.cwd();
