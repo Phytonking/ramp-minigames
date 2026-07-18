@@ -10,7 +10,7 @@ const button = cva(
       variant: {
         // The single loud note — generation / money moves.
         solar:
-          "bg-solar text-ink hover:bg-solar-light active:bg-solar-strong font-semibold",
+          "bg-solar text-on-solar hover:bg-solar-light active:bg-solar-strong font-semibold",
         // Light editorial (Studio).
         ink: "bg-ink text-bg hover:bg-ink/90",
         outline:

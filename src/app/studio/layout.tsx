@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { StudioTopBar } from "@/components/studio/StudioTopBar";
 import { CommandPalette } from "@/components/studio/CommandPalette";
 
 export const metadata: Metadata = {
@@ -14,8 +13,7 @@ export default function StudioLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-bg text-ink">
-      <StudioTopBar />
+    <div className="flex min-h-full flex-1 flex-col">
       <div className="flex-1">{children}</div>
       <CommandPalette />
     </div>

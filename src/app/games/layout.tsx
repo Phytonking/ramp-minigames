@@ -9,5 +9,5 @@ export default function GamesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="theme-arcade min-h-screen">{children}</div>;
+  return children;
 }

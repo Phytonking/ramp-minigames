@@ -2,40 +2,72 @@
 
 /*
   Ramp Minigames design tokens — see DESIGN.md §6.
-  Two personalities, one accent:
-    · Studio  = light / editorial (mirrors ramp.com)
-    · Arcade  = dark / arcade
-    · --solar (Ramp electric yellow) is the single thread binding both.
+  Global light/dark theme: a single set of *semantic* tokens (canvas / panel /
+  fg / hairline …) flips between light and dark via the `.dark` class on <html>
+  (driven by next-themes). The original section-specific token names are aliased
+  onto the same flipping variables, so every existing component adapts to the
+  active theme with zero edits. --solar (Ramp electric yellow) stays fixed.
 */
 
-@theme {
-  /* Brand accent — the single loud note. CTAs, live counters, active state, stat numerals. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --canvas: #f7f7f5; /* page background */
+  --panel: #f4f2f0; /* cards / panels */
+  --panel-2: #fbfaf9; /* elevated surface */
+  --fg: #0c0a08; /* primary text */
+  --fg-muted: #6b6862; /* secondary text */
+  --hairline: #d2cecb; /* borders / dividers */
+  --focus: #cdd8ec; /* focus ring */
+  --grid-line: rgba(12, 10, 8, 0.05);
+}
+
+.dark {
+  --canvas: #0b0b0c;
+  --panel: #141416;
+  --panel-2: #1a1a1d;
+  --fg: #ededef;
+  --fg-muted: #9a9a9f;
+  --hairline: #2a2a2e;
+  --focus: #2b3550;
+  --grid-line: rgba(255, 255, 255, 0.035);
+}
+
+@theme inline {
+  /* Brand accent — the single loud note (fixed across themes). */
   --color-solar: #e4f222;
   --color-solar-light: #f5ff78;
   --color-solar-strong: #e8e750;
   --color-blaze: #e96516;
+  --color-on-solar: #0c0a08; /* text/icons on a solar or blaze fill — always dark */
 
-  /* Studio (light / editorial) */
-  --color-bg: #f7f7f5;
-  --color-surface: #f4f2f0;
-  --color-ink: #0c0a08;
-  --color-ink-muted: #6b6862;
-  --color-line: #d2cecb;
-  --color-focus: #e4ebf6;
+  /* Semantic, theme-aware tokens. */
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-hairline: var(--hairline);
+  --color-focus: var(--focus);
 
-  /* Arcade (dark) */
-  --color-night: #0b0b0c;
-  --color-night-soft: #141416;
-  --color-night-card: #1a1a1d;
-  --color-night-border: #2a2a2e;
-  --color-paper: #ededef;
-  --color-paper-muted: #9a9a9f;
+  /* Aliases: original section tokens now flip with the theme (no component edits). */
+  --color-bg: var(--canvas);
+  --color-surface: var(--panel);
+  --color-ink: var(--fg);
+  --color-ink-muted: var(--fg-muted);
+  --color-line: var(--hairline);
+  --color-night: var(--canvas);
+  --color-night-soft: var(--panel);
+  --color-night-card: var(--panel-2);
+  --color-night-border: var(--hairline);
+  --color-paper: var(--fg);
+  --color-paper-muted: var(--fg-muted);
 
   /* Type */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Radii — tight, editorial (no oversized rounding) */
+  /* Radii */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -43,7 +75,7 @@
 }
 
 * {
-  border-color: var(--color-line);
+  border-color: var(--hairline);
 }
 
 html {
@@ -53,28 +85,15 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-ink);
+  background: var(--canvas);
+  color: var(--fg);
 }
 
-/* Arcade surfaces opt into the dark theme by wrapping in .theme-arcade */
+/* Legacy wrapper kept as a no-op — global theme now controls light/dark. */
 .theme-arcade {
-  background: var(--color-night);
-  color: var(--color-paper);
+  background: var(--canvas);
+  color: var(--fg);
 }
-
-/* Light-mode override for .theme-arcade when user prefers light or toggles */
-.theme-arcade.light,
-[data-theme="light"] .theme-arcade {
-  background: var(--color-bg);
-  color: var(--color-ink);
-}
-[data-theme="light"] .theme-arcade .border-night-border { border-color: var(--color-line); }
-[data-theme="light"] .theme-arcade .bg-night { background: var(--color-bg); }
-[data-theme="light"] .theme-arcade .bg-night-soft { background: var(--color-surface); }
-[data-theme="light"] .theme-arcade .bg-night-card { background: #fff; }
-[data-theme="light"] .theme-arcade .text-paper { color: var(--color-ink); }
-[data-theme="light"] .theme-arcade .text-paper-muted { color: var(--color-ink-muted); }
 
 /* Motion discipline — respect reduced motion everywhere (DESIGN.md §6) */
 @media (prefers-reduced-motion: reduce) {
@@ -88,10 +107,10 @@ body {
   }
 }
 
-/* Utility: fine grid background for dark surfaces (Vercel-style, subtle) */
+/* Fine grid background — adapts to the active theme. */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 44px 44px;
 }

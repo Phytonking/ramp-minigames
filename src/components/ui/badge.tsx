@@ -7,7 +7,7 @@ const badge = cva(
   {
     variants: {
       variant: {
-        solar: "border-transparent bg-solar text-ink",
+        solar: "border-transparent bg-solar text-on-solar",
         outline: "border-line bg-transparent text-ink-muted",
         "outline-dark": "border-night-border bg-transparent text-paper-muted",
         mono: "border-line bg-transparent font-mono text-ink-muted",

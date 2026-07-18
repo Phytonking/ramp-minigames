@@ -158,7 +158,7 @@ function StepNode({
       <div
         className={cn(
           "relative flex size-9 items-center justify-center rounded-full border transition-colors duration-200",
-          done && "border-transparent bg-solar text-ink",
+          done && "border-transparent bg-solar text-on-solar",
           active && !done && "border-solar bg-solar/10 text-ink",
           !active && !done && "border-line bg-bg text-ink-muted"
         )}

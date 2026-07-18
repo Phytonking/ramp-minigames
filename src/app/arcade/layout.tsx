@@ -11,5 +11,5 @@ export default function ArcadeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="theme-arcade min-h-screen">{children}</div>;
+  return children;
 }

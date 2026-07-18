@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { ThemeProvider } from "@/components/shell/ThemeProvider";
+import { AppShell } from "@/components/shell/AppShell";
+import { getSession } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,20 +29,27 @@ export const metadata: Metadata = {
     "One system that turns a Ramp launch into a playable minigame in under 90 seconds.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getSession();
+
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} h-full antialiased`}
       suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <ThemeProvider>
-          {children}
+      <body className="min-h-full">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <AppShell user={user}>{children}</AppShell>
           <Toaster position="bottom-right" />
         </ThemeProvider>
       </body>
