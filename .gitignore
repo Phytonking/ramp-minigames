@@ -1,0 +1,16 @@
+# env files
+.env
+.env.*
+!.env.example
+
+# AI tooling / IDE metadata
+.claude/
+.conductor/
+.context/
+.cursor/
+
+# Neon local context
+.neon
+
+# OS
+.DS_Store
