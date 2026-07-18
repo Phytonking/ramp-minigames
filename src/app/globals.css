@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+  Ramp Minigames design tokens — see DESIGN.md §6.
+  Two personalities, one accent:
+    · Studio  = light / editorial (mirrors ramp.com)
+    · Arcade  = dark / arcade
+    · --solar (Ramp electric yellow) is the single thread binding both.
+*/
+
+@theme {
+  /* Brand accent — the single loud note. CTAs, live counters, active state, stat numerals. */
+  --color-solar: #e4f222;
+  --color-solar-light: #f5ff78;
+  --color-solar-strong: #e8e750;
+  --color-blaze: #e96516;
+
+  /* Studio (light / editorial) */
+  --color-bg: #f7f7f5;
+  --color-surface: #f4f2f0;
+  --color-ink: #0c0a08;
+  --color-ink-muted: #6b6862;
+  --color-line: #d2cecb;
+  --color-focus: #e4ebf6;
+
+  /* Arcade (dark) */
+  --color-night: #0b0b0c;
+  --color-night-soft: #141416;
+  --color-night-card: #1a1a1d;
+  --color-night-border: #2a2a2e;
+  --color-paper: #ededef;
+  --color-paper-muted: #9a9a9f;
+
+  /* Type */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Radii — tight, editorial (no oversized rounding) */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* Arcade surfaces opt into the dark theme by wrapping in .theme-arcade */
+.theme-arcade {
+  background: var(--color-night);
+  color: var(--color-paper);
+}
+
+/* Motion discipline — respect reduced motion everywhere (DESIGN.md §6) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Utility: fine grid background for dark surfaces (Vercel-style, subtle) */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
