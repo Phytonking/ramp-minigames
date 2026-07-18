@@ -1,0 +1,10 @@
+{
+  "_init": {
+    "features": [
+      "database",
+      "auth"
+    ]
+  },
+  "orgId": "org-mute-grass-27341390",
+  "projectId": "dark-hat-15308372"
+}
