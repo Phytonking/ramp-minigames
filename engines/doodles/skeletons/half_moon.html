@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Half Moon Skeleton</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b1026;font-family:'Trebuchet MS',sans-serif;overflow:hidden;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{background:radial-gradient(circle at 50% 30%,#20305e,#0b1026);box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:8px;cursor:pointer;}
+  #hud{position:absolute;top:16px;left:0;right:0;text-align:center;color:#cdd8ff;font-size:22px;font-weight:bold;pointer-events:none;}
+  #msg{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;text-align:center;padding:24px;}
+  #msg h1{font-size:44px;margin:.2em;} #msg p{font-size:20px;max-width:640px;}
+  button{margin-top:16px;padding:12px 28px;font-size:18px;border:none;border-radius:30px;background:#5b6bd6;color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="560" height="620"></canvas></div>
+<div id="hud"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ARCHETYPE: Rise of the Half Moon — turn-based match. Click adjacent same-type tiles to clear
+// matched groups (3+) for points within limited moves. CODEGEN: theme tile types/labels/sprites
+// to the launch; keep the plan-and-connect-matching-items mechanic.
+const D=window.GAME_DESIGN||{};
+const M=(window.SPRITE_MANIFEST&&window.SPRITE_MANIFEST.sprites)||{};
+const cv=document.getElementById('game'),ctx=cv.getContext('2d'),hud=document.getElementById('hud');
+const kinds=(D.tile_types&&D.tile_types.length)?D.tile_types
+          :(D.good_items&&D.good_items.length?D.good_items:[{name:'A',sprite:'t0'},{name:'B',sprite:'t1'},{name:'C',sprite:'t2'}]);
+const N=6, CELL=560/N, MOVES=D.moves||15, TARGET=D.target_score||1000;
+const COLORS=['#e74c3c','#f6c945','#3498db','#2ecc71','#e67e22','#9b59b6'];
+const sprites={};for(const k in M){const i=new Image();i.src='sprites/'+M[k];sprites[k]=i;}
+function spr(n){const i=sprites[n];return (i&&i.complete&&i.naturalWidth)?i:null;}
+
+let grid,score,moves,running;
+function rnd(){return Math.floor(Math.random()*kinds.length);}
+function reset(){ grid=[]; for(let r=0;r<N;r++){grid[r]=[];for(let c=0;c<N;c++)grid[r][c]=rnd();} score=0; moves=MOVES; running=true; draw(); }
+reset();
+
+function flood(r,c,k,seen){ if(r<0||c<0||r>=N||c>=N)return[]; const key=r+','+c;
+  if(seen.has(key)||grid[r][c]!==k)return[]; seen.add(key); let g=[[r,c]];
+  g=g.concat(flood(r+1,c,k,seen),flood(r-1,c,k,seen),flood(r,c+1,k,seen),flood(r,c-1,k,seen)); return g; }
+function collapse(){ for(let c=0;c<N;c++){ let col=[]; for(let r=N-1;r>=0;r--) if(grid[r][c]!==null) col.push(grid[r][c]);
+  for(let r=N-1;r>=0;r--) grid[r][c]= (N-1-r)<col.length? col[N-1-r] : rnd(); } }
+cv.addEventListener('click',e=>{ if(!running) return;
+  const c=Math.floor(e.offsetX/CELL), r=Math.floor(e.offsetY/CELL); if(r<0||c<0||r>=N||c>=N) return;
+  const group=flood(r,c,grid[r][c],new Set());
+  if(group.length>=3){ score+=group.length*group.length*10; for(const [gr,gc] of group) grid[gr][gc]=null; collapse(); moves--;
+    if(score>=TARGET){ draw(); end(true); return; } if(moves<=0){ draw(); end(score>=TARGET); return; } }
+  draw();
+});
+function draw(){ ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const k=grid[r][c]; if(k===null) continue;
+    const x=c*CELL+CELL/2,y=r*CELL+CELL/2, im=spr(kinds[k].sprite||('tile_'+k));
+    if(im) ctx.drawImage(im,c*CELL+6,r*CELL+6,CELL-12,CELL-12);
+    else{ ctx.fillStyle=COLORS[k%COLORS.length]; ctx.beginPath(); ctx.arc(x,y,CELL/2-8,0,7); ctx.fill(); }
+  }
+  hud.innerHTML=`${D.hud_label||'Score'}: ${score}/${TARGET} &nbsp; Moves: ${moves}<br><span style="font-size:15px">Click groups of 3+ matching tiles</span>`;
+}
+function end(w){ running=false; document.getElementById('msgTitle').textContent=w?'YOU WIN!':'OUT OF MOVES';
+  const stat=(D.closing_stat||'').replace('{score}',score).replace('X',score);
+  document.getElementById('msgBody').textContent=(w?stat:'')+`  (Score: ${score})`;
+  document.getElementById('msg').style.display='flex'; }
+function restart(){ document.getElementById('msg').style.display='none'; reset(); }
+</script>
+</body>
+</html>

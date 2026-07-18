@@ -1,12 +1,19 @@
 import Link from "next/link";
 import { HARDCODED_GAMES } from "@/lib/games";
+import { getGeneratedGames } from "@/lib/generated";
 import { GameCard } from "@/components/arcade/GameCard";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { LoginBanner } from "@/components/arcade/LoginBanner";
 
+// Re-read the generated-games manifest on every request so Studio-shipped games
+// show up in the gallery immediately.
+export const dynamic = "force-dynamic";
+
 export default function ArcadePage() {
-  const [featured, ...rest] = HARDCODED_GAMES;
+  // Generated (pipeline) games lead the gallery, then the three handcrafted flagships.
+  const allGames = [...getGeneratedGames(), ...HARDCODED_GAMES];
+  const [featured, ...rest] = allGames;
 
   return (
     <main className="min-h-screen theme-arcade">
@@ -40,7 +47,7 @@ export default function ArcadePage() {
             </p>
           </div>
           <span className="hidden font-mono text-[11px] uppercase tracking-widest text-paper-muted sm:inline">
-            {HARDCODED_GAMES.length} games
+            {allGames.length} games
           </span>
         </div>
 

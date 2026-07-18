@@ -1,0 +1,10 @@
+{
+  "sprites": {
+    "player": "player.png",
+    "enemy_1": "enemy_1.png",
+    "enemy_2": "enemy_2.png",
+    "enemy_3": "enemy_3.png",
+    "enemy_4": "enemy_4.png",
+    "background": "background.png"
+  }
+}

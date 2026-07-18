@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Champion Island Skeleton</title>
+<style>
+  html,body{margin:0;height:100%;background:#0f4c81;font-family:'Trebuchet MS',sans-serif;overflow:hidden;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{background:linear-gradient(#4aa3df,#0f4c81);box-shadow:0 8px 40px rgba(0,0,0,.4);border-radius:8px;}
+  #hud{position:absolute;top:16px;left:0;right:0;text-align:center;color:#fff;font-size:22px;font-weight:bold;pointer-events:none;text-shadow:0 1px 2px #0006;}
+  #msg{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:24px;}
+  #msg h1{font-size:44px;margin:.2em;} #msg p{font-size:20px;max-width:640px;}
+  button{margin-top:16px;padding:12px 28px;font-size:18px;border:none;border-radius:30px;background:#e63946;color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="820" height="560"></canvas></div>
+<div id="hud"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ARCHETYPE: Champion Island — score-attack. Move left/right across lanes; grab GOOD, dodge BAD,
+// beat the TARGET before time. CODEGEN: theme to the launch; keep the fast score-attack loop.
+const D=window.GAME_DESIGN||{};
+const M=(window.SPRITE_MANIFEST&&window.SPRITE_MANIFEST.sprites)||{};
+const cv=document.getElementById('game'),ctx=cv.getContext('2d'),hud=document.getElementById('hud');
+const good=D.good_items&&D.good_items.length?D.good_items:[{name:'Good',sprite:'good',points:100}];
+const bad=D.bad_items&&D.bad_items.length?D.bad_items:[{name:'Bad',sprite:'bad'}];
+const DURATION=D.duration_seconds||45, TARGET=D.target_score||2000;
+const sprites={};for(const k in M){const i=new Image();i.src='sprites/'+M[k];sprites[k]=i;}
+function spr(n){const i=sprites[n];return (i&&i.complete&&i.naturalWidth)?i:null;}
+
+let hero,drops,score,timeLeft,spawnT,running,last,keys={};
+function reset(){ hero={x:cv.width/2}; drops=[]; score=0; timeLeft=DURATION; spawnT=0; running=true; last=performance.now(); }
+reset();
+addEventListener('keydown',e=>keys[e.key]=true); addEventListener('keyup',e=>keys[e.key]=false);
+cv.addEventListener('mousemove',e=>{ hero.x=Math.max(40,Math.min(cv.width-40,e.offsetX)); });
+
+function spawn(){ const isBad=Math.random()<0.4; const pool=isBad?bad:good; const def=pool[Math.floor(Math.random()*pool.length)];
+  drops.push({x:60+Math.random()*(cv.width-120),y:-30,bad:isBad,def}); }
+function update(dt){ if(!running) return;
+  timeLeft-=dt; if(timeLeft<=0){ timeLeft=0; end(score>=TARGET); return; }
+  if(keys['ArrowLeft']||keys['a']) hero.x=Math.max(40,hero.x-460*dt);
+  if(keys['ArrowRight']||keys['d']) hero.x=Math.min(cv.width-40,hero.x+460*dt);
+  const speed=280+(DURATION-timeLeft)*7;
+  spawnT-=dt; if(spawnT<=0){ spawn(); spawnT=Math.max(0.28,0.7-(DURATION-timeLeft)*0.007); }
+  for(const d of drops) d.y+=speed*dt;
+  const heroY=cv.height-70;
+  for(let i=drops.length-1;i>=0;i--){ const d=drops[i]; if(d.y>cv.height+30){drops.splice(i,1);continue;}
+    if(Math.abs(d.y-heroY)<44 && Math.abs(d.x-hero.x)<48){ if(d.bad){ score=Math.max(0,score-150); flash('-150','#e74c3c'); }
+      else { score+=d.def.points||100; flash('+'+(d.def.points||100),'#2ecc71'); if(score>=TARGET){end(true);return;} } drops.splice(i,1); } }
+}
+let fx='',fxc='#fff',fxT=0,fxx=0; function flash(t,c){fx=t;fxc=c;fxT=0.5;fxx=hero.x;}
+function drawAt(x,y,n,fb,s){ const im=spr(n); if(im) ctx.drawImage(im,x-s/2,y-s/2,s,s);
+  else{ ctx.fillStyle=fb; ctx.beginPath(); ctx.arc(x,y,s/2,0,7); ctx.fill(); } }
+function draw(){ ctx.clearRect(0,0,cv.width,cv.height);
+  const bg=spr('background'); if(bg) ctx.drawImage(bg,0,0,cv.width,cv.height);
+  for(const d of drops) drawAt(d.x,d.y,d.def.sprite,d.bad?'#c0392b':'#f6c945',48);
+  drawAt(hero.x,cv.height-70,(D.player&&D.player.sprite)||'player','#e63946',72);
+  if(fxT>0){ fxT-=0.016; ctx.fillStyle=fxc; ctx.font='bold 24px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText(fx,fxx,cv.height-120); }
+  hud.textContent=`${D.hud_label||'Score'}: ${score}/${TARGET}   ⏱${Math.ceil(timeLeft)}s   [← → or mouse]`;
+}
+function loop(now){ const dt=Math.min((now-last)/1000,.05); last=now; update(dt); draw(); if(running) requestAnimationFrame(loop); }
+function end(w){ running=false; document.getElementById('msgTitle').textContent=w?'YOU WIN!':'TIME UP';
+  const stat=(D.closing_stat||'').replace('{score}',score).replace('X',score);
+  document.getElementById('msgBody').textContent=(w?stat:'')+`  (Score: ${score})`;
+  document.getElementById('msg').style.display='flex'; }
+function restart(){ document.getElementById('msg').style.display='none'; reset(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

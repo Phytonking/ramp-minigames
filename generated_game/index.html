@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramp Express: Scope Sprint</title>
+<style>
+  :root{
+    --ramp-green:#00c389;
+    --ramp-green-dark:#007a5e;
+    --ink:#10241f;
+    --cream:#fff5d9;
+    --sand:#f3d68b;
+    --danger:#ff4d4d;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;
+    height:100%;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,195,137,.22), transparent 28%),
+      radial-gradient(circle at 80% 80%, rgba(255,199,87,.22), transparent 32%),
+      linear-gradient(180deg,#d9fff1 0%,#fff3c9 48%,#f4c77b 100%);
+    font-family:"Trebuchet MS", system-ui, -apple-system, Segoe UI, sans-serif;
+    overflow:hidden;
+    color:var(--ink);
+  }
+  #wrap{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  canvas{
+    width:min(96vw,900px);
+    height:auto;
+    max-height:82vh;
+    background:#f4df9b;
+    box-shadow:0 18px 70px rgba(0,50,34,.28), inset 0 0 0 4px rgba(255,255,255,.55);
+    border:4px solid rgba(16,36,31,.85);
+    border-radius:18px;
+    touch-action:manipulation;
+  }
+  #hud{
+    position:absolute;
+    top:14px;
+    left:50%;
+    transform:translateX(-50%);
+    min-width:min(880px,94vw);
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    color:#0b3429;
+    font-size:18px;
+    font-weight:900;
+    pointer-events:none;
+    text-shadow:0 2px 0 rgba(255,255,255,.75);
+    padding:0 10px;
+  }
+  .pill{
+    background:rgba(255,255,255,.78);
+    border:2px solid rgba(0,122,94,.25);
+    box-shadow:0 6px 18px rgba(0,0,0,.08);
+    border-radius:999px;
+    padding:8px 14px;
+    white-space:nowrap;
+    backdrop-filter:blur(8px);
+  }
+  #subtitle{
+    position:absolute;
+    bottom:18px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(880px,94vw);
+    text-align:center;
+    color:#17352f;
+    font-weight:800;
+    pointer-events:none;
+    text-shadow:0 2px 0 rgba(255,255,255,.65);
+    opacity:.9;
+  }
+  #msg{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:rgba(7,20,17,.72);
+    color:#fff;
+    text-align:center;
+    padding:24px;
+    z-index:5;
+    backdrop-filter:blur(8px);
+  }
+  #msg .panel{
+    width:min(720px,92vw);
+    background:linear-gradient(180deg,rgba(15,55,45,.96),rgba(5,24,20,.96));
+    border:3px solid rgba(0,195,137,.8);
+    border-radius:24px;
+    box-shadow:0 22px 80px rgba(0,0,0,.38);
+    padding:28px;
+  }
+  #msg h1{
+    font-size:clamp(34px,6vw,58px);
+    line-height:.95;
+    margin:.05em 0 .25em;
+    color:#eafff7;
+    text-shadow:0 4px 0 rgba(0,0,0,.25);
+  }
+  #msg p{
+    font-size:20px;
+    line-height:1.45;
+    max-width:640px;
+    margin:10px auto;
+  }
+  #msg .small{
+    color:#bdf7e1;
+    font-size:15px;
+    margin-top:8px;
+  }
+  button{
+    margin-top:18px;
+    padding:13px 30px;
+    font-size:18px;
+    font-weight:900;
+    border:none;
+    border-radius:999px;
+    background:linear-gradient(180deg,#00d997,#00a978);
+    color:#06271f;
+    cursor:pointer;
+    box-shadow:0 8px 0 #006f55, 0 18px 35px rgba(0,0,0,.28);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  button:hover{transform:translateY(-2px)}
+  button:active{transform:translateY(5px);box-shadow:0 3px 0 #006f55, 0 10px 20px rgba(0,0,0,.22)}
+  @media (max-width:700px){
+    #hud{font-size:13px;top:8px}
+    .pill{padding:6px 8px}
+    #subtitle{font-size:12px;bottom:8px}
+  }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="900" height="540" aria-label="Ramp Express Scope Sprint game"></canvas></div>
+<div id="hud">
+  <div class="pill" id="hudScore"></div>
+  <div class="pill" id="hudHint">↑/↓ or W/S · click/tap a lane</div>
+  <div class="pill" id="hudTime"></div>
+</div>
+<div id="subtitle"></div>
+<div id="msg">
+  <div class="panel">
+    <h1 id="msgTitle"></h1>
+    <p id="msgBody"></p>
+    <p class="small" id="msgDetail"></p>
+    <button onclick="restart()">Play again</button>
+  </div>
+</div>
+
+<script>
+window.GAME_DESIGN = {"chosen_archetype": "pony_express", "why": "A side-scrolling collect-and-dodge runner best dramatizes grabbing only legitimate scoped charges while avoiding everything off-scope at launch-speed volume.", "title": "Ramp Express: Scope Sprint", "subtitle": "Catch the exact charge your agent card was made for\u2014dodge everything else.", "hud_label": "Scoped Charges", "duration_seconds": 60, "target_score": 1500, "closing_stat": "You safely captured {score} scoped charges without blowing the budget.", "feature_explainer": {"headline": "Ramp Agent Cards (Ramp Express)", "bullets": ["Ramp issues scoped, single-purpose agent cards.", "Each card can only be used for the exact charge it was created for.", "Agents collect legitimate scoped charges that match their card.", "Open cards, duplicate charges, fraudulent vendors, and expired authorization tokens are off-scope risks."], "cta_text": "Explore Ramp Express", "learn_more_url": "https://ramp.com"}, "art_style": "Flat vibrant cartoon with bold outlines and a wild-west express-runner feel, reimagined as a high-speed finance trail with card rails, receipt tumbleweeds, and Ramp-green accents.", "player": {"name": "Scoped Agent Courier", "sprite": "player"}, "good_items": [{"name": "Legitimate Scoped Charge", "sprite": "good_1", "points": 100}], "bad_items": [{"name": "Open Unscoped Card", "sprite": "bad_1"}, {"name": "Duplicate Charge", "sprite": "bad_2"}, {"name": "Fake Vendor", "sprite": "bad_3"}, {"name": "Expired Authorization Token", "sprite": "bad_4"}], "sprites": [{"name": "player", "role": "player", "prompt": "agent courier holding a locked payment card"}, {"name": "good_1", "role": "good", "prompt": "approved charge receipt with lock and checkmark"}, {"name": "bad_1", "role": "bad", "prompt": "open payment card with warning symbol"}, {"name": "bad_2", "role": "bad", "prompt": "two identical charge receipts stacked together"}, {"name": "bad_3", "role": "bad", "prompt": "suspicious vendor storefront with mask icon"}, {"name": "bad_4", "role": "bad", "prompt": "authorization token with cracked hourglass"}, {"name": "background", "role": "bg", "prompt": "finance express trail with card rails receipt signs and office skyline"}]};
+window.SPRITE_MANIFEST = {"sprites": {"player": "player.png", "good_1": "good_1.png", "bad_1": "bad_1.png", "bad_2": "bad_2.png", "bad_3": "bad_3.png", "bad_4": "bad_4.png", "background": "background.png"}};
+
+(function(){
+  function build(fe){
+    var wrap=document.createElement('div');
+    wrap.id='ramp-feature-card';
+    wrap.style.cssText='margin:16px auto 4px;padding:16px 20px;max-width:560px;text-align:left;'+
+      'background:#ffffff;color:#111;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:15px;line-height:1.5;';
+    var h='<div style="font-size:18px;font-weight:800;margin-bottom:8px;color:#1a7f37">'+
+      (fe.headline||'About this Ramp launch')+'</div>';
+    if(fe.bullets&&fe.bullets.length){ h+='<ul style="margin:0 0 10px 18px;padding:0">';
+      fe.bullets.forEach(function(b){ h+='<li style="margin:3px 0">'+b+'</li>'; }); h+='</ul>'; }
+    if(fe.learn_more_url){ h+='<a href="'+fe.learn_more_url+'" target="_blank" rel="noopener" '+
+      'style="display:inline-block;margin-top:4px;padding:8px 16px;background:#1a7f37;color:#fff;'+
+      'border-radius:20px;text-decoration:none;font-weight:700">'+(fe.cta_text||'Learn more')+' →</a>'; }
+    wrap.innerHTML=h; return wrap;
+  }
+  function inject(){
+    var fe=(window.GAME_DESIGN||{}).feature_explainer; if(!fe) return;
+    var m=document.getElementById('msg'); if(!m) return;
+    var visible=getComputedStyle(m).display!=='none';
+    if(visible && !document.getElementById('ramp-feature-card')){
+      var btn=m.querySelector('button'); var card=build(fe);
+      if(btn) m.insertBefore(card,btn); else m.appendChild(card);
+    }
+  }
+  function start(){
+    var m=document.getElementById('msg');
+    if(m){ new MutationObserver(inject).observe(m,{attributes:true,attributeFilter:['style','class']}); }
+    // Fallback poll in case the overlay is toggled by other means.
+    setInterval(inject,600);
+  }
+  if(document.readyState!=='loading') start(); else document.addEventListener('DOMContentLoaded',start);
+})();
+
+</script>
+
+<script>
+// ARCHETYPE: Pony Express — side-scrolling lane runner. Catch GOOD items, dodge BAD items.
+// THEME: Ramp Express: Scope Sprint — collect only legitimate scoped charges.
+const D = window.GAME_DESIGN || {};
+let manifestSprites = (window.SPRITE_MANIFEST && window.SPRITE_MANIFEST.sprites) || {};
+if ((!manifestSprites || !Object.keys(manifestSprites).length) && Array.isArray(D.sprites)) {
+  manifestSprites = {};
+  for (const s of D.sprites) if (s && s.name) manifestSprites[s.name] = s.name + ".png";
+}
+const M = manifestSprites || {};
+
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+const hudScore = document.getElementById("hudScore");
+const hudTime = document.getElementById("hudTime");
+const hudHint = document.getElementById("hudHint");
+const subtitleEl = document.getElementById("subtitle");
+
+document.title = D.title || "Ramp Express: Scope Sprint";
+subtitleEl.textContent = D.subtitle || "Catch the exact charge your agent card was made for—dodge everything else.";
+
+const good = D.good_items && D.good_items.length ? D.good_items : [{name:"Legitimate Scoped Charge",sprite:"good_1",points:100}];
+const bad  = D.bad_items  && D.bad_items.length  ? D.bad_items  : [
+  {name:"Open Unscoped Card",sprite:"bad_1"},
+  {name:"Duplicate Charge",sprite:"bad_2"},
+  {name:"Fake Vendor",sprite:"bad_3"},
+  {name:"Expired Authorization Token",sprite:"bad_4"}
+];
+const DURATION = Number(D.duration_seconds) || 60;
+const TARGET = Number(D.target_score) || 1500;
+const POINTS = Number(good[0] && good[0].points) || 100;
+
+const sprites = {};
+for (const k in M) {
+  const img = new Image();
+  img.decoding = "async";
+  img.src = "sprites/" + M[k];
+  img.onerror = () => { img.failed = true; };
+  sprites[k] = img;
+}
+function spr(name) {
+  const i = sprites[name];
+  return (i && !i.failed && i.complete && i.naturalWidth > 0) ? i : null;
+}
+
+const LANES = 3;
+const laneY = i => 142 + i * 145;
+const playerSprite = (D.player && D.player.sprite) || "player";
+const playerName = (D.player && D.player.name) || "Scoped Agent Courier";
+
+let player, items, particles, score, timeLeft, spawnT, running, won, last, scroll, shake, messageReason, streak, nextBonusAt;
+let rafId = 0;
+
+function reset() {
+  player = {lane:1, y:laneY(1), x:154, bob:0};
+  items = [];
+  particles = [];
+  score = 0;
+  timeLeft = DURATION;
+  spawnT = .2;
+  running = true;
+  won = false;
+  last = performance.now();
+  scroll = 0;
+  shake = 0;
+  messageReason = "";
+  streak = 0;
+  nextBonusAt = 500;
+  hudHint.textContent = "↑/↓ or W/S · click/tap a lane";
+}
+
+reset();
+
+function setLane(n) {
+  if (!running) return;
+  const old = player.lane;
+  player.lane = Math.max(0, Math.min(LANES - 1, n));
+  if (old !== player.lane) {
+    makeDust(player.x - 26, player.y + 24, "#f0bd62", 7);
+  }
+}
+
+addEventListener("keydown", e => {
+  if (["ArrowUp","w","W"].includes(e.key)) { e.preventDefault(); setLane(player.lane - 1); }
+  if (["ArrowDown","s","S"].includes(e.key)) { e.preventDefault(); setLane(player.lane + 1); }
+  if (!running && (e.key === "Enter" || e.key === " ")) restart();
+});
+
+cv.addEventListener("click", e => {
+  const r = cv.getBoundingClientRect();
+  const y = (e.clientY - r.top) * (cv.height / r.height);
+  setLane(Math.round((y - laneY(0)) / 145));
+});
+cv.addEventListener("touchstart", e => {
+  const t = e.changedTouches[0];
+  const r = cv.getBoundingClientRect();
+  const y = (t.clientY - r.top) * (cv.height / r.height);
+  setLane(Math.round((y - laneY(0)) / 145));
+}, {passive:true});
+
+function spawn() {
+  const elapsed = DURATION - timeLeft;
+  const isBad = Math.random() < Math.min(.50, .34 + elapsed * .003);
+  const pool = isBad ? bad : good;
+  const def = pool[Math.floor(Math.random() * pool.length)];
+  let lane = Math.floor(Math.random() * LANES);
+
+  if (items.length && Math.random() < .45) {
+    const recent = items[items.length - 1];
+    if (recent && recent.x > cv.width - 120) lane = (recent.lane + 1 + Math.floor(Math.random() * 2)) % LANES;
+  }
+
+  items.push({
+    lane,
+    x:cv.width + 58,
+    y:laneY(lane),
+    bad:isBad,
+    def,
+    r:isBad ? 29 : 27,
+    spin:Math.random() * Math.PI * 2,
+    pulse:Math.random() * Math.PI * 2
+  });
+}
+
+function makeDust(x, y, color, count) {
+  for (let i=0;i<count;i++) {
+    particles.push({
+      x, y,
+      vx:-80 - Math.random()*120,
+      vy:-45 + Math.random()*90,
+      life:.35 + Math.random()*.25,
+      max:.6,
+      size:3 + Math.random()*6,
+      color
+    });
+  }
+}
+
+function makeCollect(x, y) {
+  for (let i=0;i<18;i++) {
+    particles.push({
+      x, y,
+      vx:-90 + Math.random()*180,
+      vy:-130 + Math.random()*220,
+      life:.45 + Math.random()*.35,
+      max:.8,
+      size:3 + Math.random()*5,
+      color: i % 3 ? "#00c389" : "#fff7b0"
+    });
+  }
+}
+
+function makeCrash(x, y) {
+  for (let i=0;i<28;i++) {
+    particles.push({
+      x, y,
+      vx:-170 + Math.random()*300,
+      vy:-190 + Math.random()*300,
+      life:.55 + Math.random()*.35,
+      max:.9,
+      size:4 + Math.random()*8,
+      color: i % 2 ? "#ff4d4d" : "#ffe0a3"
+    });
+  }
+}
+
+function update(dt) {
+  if (!running) {
+    updateParticles(dt);
+    return;
+  }
+
+  const elapsed = DURATION - timeLeft;
+  timeLeft -= dt;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    messageReason = score >= TARGET ? "target" : "time";
+    end(score >= TARGET);
+    return;
+  }
+
+  scroll += (165 + elapsed * 4.5) * dt;
+  player.bob += dt * 9;
+  player.y += (laneY(player.lane) - player.y) * Math.min(1, dt * 14);
+
+  const speed = 292 + elapsed * 3.9;
+  spawnT -= dt;
+  if (spawnT <= 0) {
+    spawn();
+    spawnT = Math.max(.36, .82 - elapsed * .006) * (.82 + Math.random() * .45);
+  }
+
+  if (Math.random() < dt * 11) makeDust(player.x - 42, player.y + 32, "rgba(219,160,71,.9)", 1);
+
+  for (const it of items) {
+    it.x -= speed * dt;
+    it.y += (laneY(it.lane) - it.y) * Math.min(1, dt * 10);
+    it.spin += dt * (it.bad ? 2.2 : 3.8);
+    it.pulse += dt * 6;
+  }
+
+  for (let i=items.length-1;i>=0;i--) {
+    const it = items[i];
+    if (it.x < -70) {
+      items.splice(i,1);
+      continue;
+    }
+
+    const dx = it.x - player.x;
+    const dy = it.y - player.y;
+    const hit = Math.abs(dx) < 54 && Math.abs(dy) < 54;
+    if (hit) {
+      if (it.bad) {
+        messageReason = it.def && it.def.name ? it.def.name : "off-scope risk";
+        shake = .45;
+        makeCrash(it.x, it.y);
+        end(false);
+        return;
+      } else {
+        score += Number(it.def.points) || POINTS;
+        streak++;
+        makeCollect(it.x, it.y);
+        items.splice(i,1);
+        shake = Math.max(shake, .08);
+        if (score >= nextBonusAt) {
+          hudHint.textContent = "Locked to scope! Keep sprinting.";
+          nextBonusAt += 500;
+        }
+        if (score >= TARGET) {
+          messageReason = "target";
+          end(true);
+          return;
+        }
+      }
+    }
+  }
+
+  updateParticles(dt);
+  shake = Math.max(0, shake - dt);
+}
+
+function updateParticles(dt) {
+  for (let i=particles.length-1;i>=0;i--) {
+    const p = particles[i];
+    p.life -= dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 180 * dt;
+    p.vx *= Math.pow(.02, dt);
+    if (p.life <= 0) particles.splice(i,1);
+  }
+}
+
+function roundedRect(x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function drawFallbackPlayer(x,y,size) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#10241f";
+
+  ctx.fillStyle = "#00c389";
+  roundedRect(-28,-24,50,42,12);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = "#fff9de";
+  ctx.beginPath(); ctx.arc(2,-38,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = "#1d3d35";
+  ctx.beginPath(); ctx.arc(-5,-41,2.5,0,7); ctx.arc(8,-41,2.5,0,7); ctx.fill();
+
+  ctx.fillStyle = "#f7c948";
+  roundedRect(8,-10,34,22,5);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#10241f";
+  ctx.fillRect(15,-1,20,4);
+  ctx.fillStyle = "#00c389";
+  ctx.beginPath(); ctx.arc(25,-14,7,Math.PI,0); ctx.stroke();
+
+  ctx.fillStyle = "#10241f";
+  ctx.fillRect(-22,18,10,20);
+  ctx.fillRect(6,18,10,20);
+  ctx.restore();
+}
+
+function drawFallbackGood(x,y,size,spin) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(Math.sin(spin) * .08);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#0b3429";
+  ctx.fillStyle = "#fffdf0";
+  roundedRect(-24,-30,48,60,8);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#00c389";
+  ctx.fillRect(-14,-17,28,6);
+  ctx.beginPath();
+  ctx.moveTo(-12,8); ctx.lineTo(-2,18); ctx.lineTo(16,-6);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#00c389";
+  ctx.stroke();
+  ctx.strokeStyle = "#0b3429";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0,-24,8,Math.PI,0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawFallbackBad(x,y,size,spin,label) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(Math.sin(spin) * .12);
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#3a1111";
+  ctx.fillStyle = "#ff6868";
+  roundedRect(-28,-25,56,50,10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#fff1d8";
+  ctx.beginPath();
+  ctx.moveTo(0,-17); ctx.lineTo(18,17); ctx.lineTo(-18,17);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#3a1111";
+  ctx.font = "900 24px Trebuchet MS";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("!",0,6);
+  ctx.restore();
+}
+
+function drawEntity(x,y,name,fallback,size,isBad,spin,defName) {
+  const s = spr(name);
+  ctx.save();
+  if (isBad) {
+    ctx.shadowColor = "rgba(255,77,77,.35)";
+    ctx.shadowBlur = 12;
+  } else {
+    ctx.shadowColor = "rgba(0,195,137,.35)";
+    ctx.shadowBlur = 12;
+  }
+
+  if (s) {
+    ctx.drawImage(s, x-size/2, y-size/2, size, size);
+  } else if (name === playerSprite) {
+    drawFallbackPlayer(x,y,size);
+  } else if (!isBad) {
+    drawFallbackGood(x,y,size,spin || 0);
+  } else {
+    drawFallbackBad(x,y,size,spin || 0,defName || "Risk");
+  }
+  ctx.restore();
+}
+
+function drawBackground() {
+  const bg = spr("background");
+  if (bg) {
+    const w = cv.width, h = cv.height;
+    const x = -((scroll * .22) % w);
+    ctx.drawImage(bg, x, 0, w, h);
+    ctx.drawImage(bg, x + w, 0, w, h);
+    return;
+  }
+
+  const sky = ctx.createLinearGradient(0,0,0,cv.height);
+  sky.addColorStop(0,"#bfffea");
+  sky.addColorStop(.45,"#fff1b8");
+  sky.addColorStop(1,"#efbd67");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,cv.width,cv.height);
+
+  ctx.save();
+  ctx.translate(-((scroll*.13)%900),0);
+  for (let rep=0; rep<2; rep++) {
+    const ox = rep*900;
+    ctx.fillStyle = "rgba(0,122,94,.16)";
+    for (let i=0;i<7;i++) {
+      const x = ox + 40 + i*145;
+      const h = 70 + (i%3)*28;
+      roundedRect(x, 235-h, 64, h, 8);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.45)";
+      for (let wy=0;wy<h-20;wy+=18) ctx.fillRect(x+12, 250-h+wy, 10, 7);
+      ctx.fillStyle = "rgba(0,122,94,.16)";
+    }
+
+    ctx.fillStyle = "rgba(119,74,25,.18)";
+    ctx.font = "900 24px Trebuchet MS";
+    ctx.fillText("APPROVED TRAIL", ox + 520, 120);
+
+    ctx.strokeStyle = "rgba(119,74,25,.24)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(ox + 90, 95); ctx.lineTo(ox + 170, 95); ctx.lineTo(ox + 170, 155); ctx.lineTo(ox + 90, 155); ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(0,195,137,.22)";
+    ctx.fillRect(ox + 112, 115, 36, 18);
+  }
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(133,82,28,.16)";
+  for (let i=0;i<16;i++) {
+    const x = (i*84 - (scroll*.75 % 84));
+    ctx.beginPath();
+    ctx.arc(x, 486 + Math.sin(i)*8, 18, 0, Math.PI*2);
+    ctx.strokeStyle = "rgba(133,82,28,.22)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+}
+
+function drawLanes() {
+  for (let i=0;i<LANES;i++) {
+    const y = laneY(i) + 48;
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = "rgba(93,57,23,.26)";
+    ctx.beginPath();
+    ctx.moveTo(0,y); ctx.lineTo(cv.width,y);
+    ctx.stroke();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(0,122,94,.38)";
+    ctx.setLineDash([28,18]);
+    ctx.lineDashOffset = -scroll * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0,y-9); ctx.lineTo(cv.width,y-9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0,y+9); ctx.lineTo(cv.width,y+9);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "rgba(255,255,255,.32)";
+    ctx.font = "900 13px Trebuchet MS";
+    ctx.textAlign = "left";
+    ctx.fillText(["SCOPE LANE A","SCOPE LANE B","SCOPE LANE C"][i], 18, y - 18);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const a = Math.max(0, Math.min(1, p.life / p.max));
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * (1.1 - a*.25), 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawTopBanner() {
+  ctx.save();
+  ctx.globalAlpha = .95;
+  ctx.fillStyle = "rgba(255,255,255,.62)";
+  roundedRect(18,18,370,52,18);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,122,94,.24)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#0b3429";
+  ctx.font = "900 22px Trebuchet MS";
+  ctx.textAlign = "left";
+  ctx.fillText(D.title || "Ramp Express: Scope Sprint", 38, 42);
+
+  ctx.fillStyle = "#007a5e";
+  ctx.font = "800 12px Trebuchet MS";
+  ctx.fillText(playerName + " · collect locked approvals only", 39, 60);
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0,0,cv.width,cv.height);
+
+  const sx = shake ? (Math.random() - .5) * shake * 18 : 0;
+  const sy = shake ? (Math.random() - .5) * shake * 12 : 0;
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  drawBackground();
+  drawLanes();
+
+  items.sort((a,b)=>a.y-b.y);
+  for (const it of items) {
+    const bob = Math.sin(it.pulse) * 4;
+    drawEntity(it.x, it.y + bob, it.def.sprite, it.bad ? "#ff4d4d" : "#00c389", it.bad ? 62 : 58, it.bad, it.spin, it.def.name);
+
+    if (!it.bad) {
+      ctx.save();
+      ctx.globalAlpha = .55 + Math.sin(it.pulse)*.15;
+      ctx.strokeStyle = "#00c389";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(it.x, it.y + bob, 37, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  drawParticles();
+
+  const py = player.y + Math.sin(player.bob) * 3;
+  drawEntity(player.x, py, playerSprite, "#00c389", 78, false, 0, playerName);
+
+  ctx.save();
+  ctx.globalAlpha = .25;
+  ctx.fillStyle = "#3b2a18";
+  ctx.beginPath();
+  ctx.ellipse(player.x - 4, player.y + 48, 40, 10, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  drawTopBanner();
+  ctx.restore();
+
+  const need = Math.max(0, TARGET - score);
+  hudScore.textContent = `${D.hud_label || "Scoped Charges"}: ${score} / ${TARGET}`;
+  hudTime.textContent = `⏱ ${Math.ceil(timeLeft)}s · ${Math.ceil(need / POINTS)} to go`;
+}
+
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, .05);
+  last = now;
+  update(dt);
+  draw();
+  if (running) rafId = requestAnimationFrame(loop);
+}
+
+function end(w) {
+  if (!running) return;
+  running = false;
+  won = w;
+
+  draw();
+
+  const msg = document.getElementById("msg");
+  const title = document.getElementById("msgTitle");
+  const body = document.getElementById("msgBody");
+  const detail = document.getElementById("msgDetail");
+
+  title.textContent = w ? "Scope Secured!" : "Off-Scope Stop!";
+  const stat = (D.closing_stat || "You safely captured {score} scoped charges without blowing the budget.").replaceAll("{score}", score).replace("X", score);
+
+  if (w) {
+    body.textContent = stat;
+    detail.textContent = `Final score: ${score}. Every approved receipt matched the card’s exact scope.`;
+  } else if (messageReason === "time") {
+    body.textContent = `Time ran out before the courier reached ${TARGET} scoped charges.`;
+    detail.textContent = `Final score: ${score}. Sprint again and prioritize the locked approval receipts.`;
+  } else {
+    body.textContent = `The courier collided with an off-scope risk: ${messageReason}.`;
+    detail.textContent = `Final score: ${score}. Dodge open cards, duplicate charges, fake vendors, and expired tokens.`;
+  }
+
+  msg.style.display = "flex";
+}
+
+function restart() {
+  cancelAnimationFrame(rafId);
+  document.getElementById("msg").style.display = "none";
+  reset();
+  rafId = requestAnimationFrame(loop);
+}
+window.restart = restart;
+
+rafId = requestAnimationFrame(loop);
+</script>
+</body>
+</html>

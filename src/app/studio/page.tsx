@@ -100,11 +100,39 @@ export default function StudioPage() {
     setResult(null);
     setPhase("building");
 
+    // Kick off the REAL doodle pipeline (MAP → sprites → code-gen) immediately.
+    const realRun = fetch("/api/generate-doodle", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ excerpt: text }),
+      signal: controller.signal,
+    }).then(async (r) => {
+      if (!r.ok) {
+        const e = (await r.json().catch(() => ({}))) as { error?: string };
+        throw new Error(e.error || "generation failed");
+      }
+      return (await r.json()) as {
+        slug: string;
+        game: RunResult["game"];
+      };
+    });
+
+    let creep: ReturnType<typeof setInterval> | null = null;
+
     try {
+      // Animated stepper for the ingest → extract → design → code beats. We hand
+      // off to the real pipeline at the sandbox stage (the long-running part).
       for await (const ev of runMockPipeline(text, {
         signal: controller.signal,
         reducedMotion: reduced,
       })) {
+        if (ev.type === "stage" && ev.stage === "sandbox") {
+          setActiveStage("sandbox");
+          setStatusCopy(
+            "Running the real pipeline — MAP → sprites → code-gen. This can take a few minutes…"
+          );
+          break;
+        }
         switch (ev.type) {
           case "stage":
             setActiveStage(ev.stage);
@@ -114,15 +142,10 @@ export default function StudioPage() {
             setStatusCopy(ev.status);
             break;
           case "stage-complete":
-            setCompleted((c) =>
-              c.includes(ev.stage) ? c : [...c, ev.stage]
-            );
+            setCompleted((c) => (c.includes(ev.stage) ? c : [...c, ev.stage]));
             break;
           case "spec-open":
-            setSpec((s) => ({
-              ...s,
-              [ev.field]: { value: "", streaming: true },
-            }));
+            setSpec((s) => ({ ...s, [ev.field]: { value: "", streaming: true } }));
             break;
           case "spec-chunk":
             setSpec((s) => ({
@@ -136,40 +159,52 @@ export default function StudioPage() {
           case "spec-done":
             setSpec((s) => ({
               ...s,
-              [ev.field]: {
-                value: s[ev.field]?.value ?? "",
-                streaming: false,
-              },
+              [ev.field]: { value: s[ev.field]?.value ?? "", streaming: false },
             }));
             break;
           case "code-line":
             setCodeLines((l) => [...l, ev.line]);
             break;
-          case "boot":
-            setBootProgress(ev.progress);
-            break;
-          case "preview-ready": {
-            const closingStat =
-              findSampleForInput(text).spec.closing_stat_template;
-            setResult({
-              game: ev.game,
-              previewUrl: ev.previewUrl,
-              closingStat,
-            });
-            setPhase("live");
-            toast.success("Shipped to the Arcade", {
-              description: `${ev.game.title} is live in the gallery.`,
-              action: {
-                label: "Open →",
-                onClick: () => router.push("/arcade"),
-              },
-            });
-            break;
-          }
         }
       }
-    } catch {
-      // Aborted (reset / unmount) — swallow.
+
+      // Hand-off: creep the sandbox ring while the real pipeline finishes.
+      setCompleted((c) =>
+        ["ingest", "extract", "design", "code"].reduce<PipelineStage[]>(
+          (acc, s) => (acc.includes(s as PipelineStage) ? acc : [...acc, s as PipelineStage]),
+          c
+        )
+      );
+      setBootProgress(0.12);
+      creep = setInterval(
+        () => setBootProgress((p) => Math.min(0.95, p + 0.01)),
+        900
+      );
+
+      const data = await realRun;
+      if (creep) clearInterval(creep);
+      setBootProgress(1);
+      setCompleted((c) =>
+        c.includes("sandbox") ? c : [...c, "sandbox" as PipelineStage]
+      );
+
+      const game = data.game;
+      setResult({
+        game,
+        previewUrl: game.previewUrl ?? `/generated/${data.slug}/index.html`,
+        closingStat: game.closingStat,
+      });
+      setPhase("live");
+      toast.success("Shipped to the Arcade", {
+        description: `${game.title} is live in the gallery.`,
+        action: { label: "Open →", onClick: () => router.push("/arcade") },
+      });
+    } catch (err) {
+      if (creep) clearInterval(creep);
+      const e = err as Error;
+      if (e.name === "AbortError") return; // reset / unmount — swallow
+      toast.error("Generation failed", { description: e.message });
+      setPhase("intake");
     }
   }, [input, reduced, router]);
 

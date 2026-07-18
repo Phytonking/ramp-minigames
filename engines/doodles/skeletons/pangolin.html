@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangolin Skeleton</title>
+<style>
+  html,body{margin:0;height:100%;background:#8ecae6;font-family:'Trebuchet MS',sans-serif;overflow:hidden;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{background:linear-gradient(#aee0f7,#cde0b0);box-shadow:0 8px 40px rgba(0,0,0,.25);border-radius:8px;}
+  #hud{position:absolute;top:16px;left:0;right:0;text-align:center;color:#3a5a1b;font-size:22px;font-weight:bold;pointer-events:none;}
+  #msg{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.5);color:#fff;text-align:center;padding:24px;}
+  #msg h1{font-size:44px;margin:.2em;} #msg p{font-size:20px;max-width:640px;}
+  button{margin-top:16px;padding:12px 28px;font-size:18px;border:none;border-radius:30px;background:#e07a1f;color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="900" height="520"></canvas></div>
+<div id="hud"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ARCHETYPE: Pangolin — roll-and-collect platformer. Move + jump, gather GOOD items to a quota,
+// avoid BAD hazards. CODEGEN: theme items/hero/labels to the launch; keep the collect-toward-goal mechanic.
+const D=window.GAME_DESIGN||{};
+const M=(window.SPRITE_MANIFEST&&window.SPRITE_MANIFEST.sprites)||{};
+const cv=document.getElementById('game'),ctx=cv.getContext('2d'),hud=document.getElementById('hud');
+const good=D.good_items&&D.good_items.length?D.good_items:[{name:'Good',sprite:'good',points:100}];
+const bad=D.bad_items&&D.bad_items.length?D.bad_items:[{name:'Bad',sprite:'bad'}];
+const DURATION=D.duration_seconds||60, TARGET=D.target_score||1500;
+const sprites={};for(const k in M){const i=new Image();i.src='sprites/'+M[k];sprites[k]=i;}
+function spr(n){const i=sprites[n];return (i&&i.complete&&i.naturalWidth)?i:null;}
+
+const GROUND=cv.height-70;
+let hero,things,score,timeLeft,spawnT,running,last,keys={};
+function reset(){ hero={x:150,y:GROUND,vy:0,onGround:true}; things=[]; score=0; timeLeft=DURATION; spawnT=0; running=true; last=performance.now(); }
+reset();
+addEventListener('keydown',e=>{keys[e.key]=true; if([' ','ArrowUp','w','W'].includes(e.key)&&hero.onGround){hero.vy=-620;hero.onGround=false;}});
+addEventListener('keyup',e=>{keys[e.key]=false;});
+
+function spawn(){ const isBad=Math.random()<0.35; const pool=isBad?bad:good; const def=pool[Math.floor(Math.random()*pool.length)];
+  const high=Math.random()<0.5; things.push({x:cv.width+40,y:high?GROUND-120:GROUND,bad:isBad,def}); }
+function update(dt){ if(!running) return;
+  timeLeft-=dt; if(timeLeft<=0){ timeLeft=0; end(score>=TARGET); return; }
+  if(keys['ArrowLeft']||keys['a']) hero.x=Math.max(60,hero.x-320*dt);
+  if(keys['ArrowRight']||keys['d']) hero.x=Math.min(cv.width-60,hero.x+320*dt);
+  hero.vy+=1800*dt; hero.y+=hero.vy*dt; if(hero.y>=GROUND){hero.y=GROUND;hero.vy=0;hero.onGround=true;}
+  const speed=300+(DURATION-timeLeft)*3;
+  spawnT-=dt; if(spawnT<=0){ spawn(); spawnT=Math.max(0.4,0.9-(DURATION-timeLeft)*0.007); }
+  for(const t of things) t.x-=speed*dt;
+  for(let i=things.length-1;i>=0;i--){ const t=things[i]; if(t.x<-40){things.splice(i,1);continue;}
+    if(Math.hypot(t.x-hero.x,t.y-hero.y)<54){ if(t.bad){ end(false); return; } score+=t.def.points||100; things.splice(i,1); } }
+}
+function drawAt(x,y,n,fb,s){ const im=spr(n); if(im) ctx.drawImage(im,x-s/2,y-s/2,s,s);
+  else{ ctx.fillStyle=fb; ctx.beginPath(); ctx.arc(x,y,s/2,0,7); ctx.fill(); } }
+function draw(){ ctx.clearRect(0,0,cv.width,cv.height);
+  const bg=spr('background'); if(bg) ctx.drawImage(bg,0,0,cv.width,cv.height);
+  ctx.fillStyle='#3a5a1b'; ctx.fillRect(0,GROUND+40,cv.width,cv.height);
+  for(const t of things) drawAt(t.x,t.y,t.def.sprite,t.bad?'#c0392b':'#f1c40f',52);
+  drawAt(hero.x,hero.y,(D.player&&D.player.sprite)||'player','#8e5a2b',70);
+  hud.textContent=`${D.hud_label||'Collected'}: ${score}/${TARGET}   ⏱${Math.ceil(timeLeft)}s`;
+}
+function loop(now){ const dt=Math.min((now-last)/1000,.05); last=now; update(dt); draw(); if(running) requestAnimationFrame(loop); }
+function end(w){ running=false; document.getElementById('msgTitle').textContent=w?'YOU WIN!':'GAME OVER';
+  const stat=(D.closing_stat||'').replace('{score}',score).replace('X',score);
+  document.getElementById('msgBody').textContent=(w?stat:'')+`  (Score: ${score})`;
+  document.getElementById('msg').style.display='flex'; }
+function restart(){ document.getElementById('msg').style.display='none'; reset(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

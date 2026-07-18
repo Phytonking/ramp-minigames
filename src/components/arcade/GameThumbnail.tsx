@@ -54,7 +54,42 @@ export function GameThumbnail({
         {game.mechanic === "timed-race" && (
           <RaceLoop run={run} accent={accent} />
         )}
+        {!["resource-sorting", "judgment-under-volume", "timed-race"].includes(
+          game.mechanic
+        ) && <GeneratedLoop run={run} accent={accent} />}
       </div>
+    </div>
+  );
+}
+
+/** Fallback loop for pipeline-generated games (arbitrary mechanics): a small
+ *  grid of pixel tiles that pulse in a wave — evokes an arcade canvas game. */
+function GeneratedLoop({ run, accent }: { run: boolean; accent: string }) {
+  const tiles = Array.from({ length: 16 });
+  return (
+    <div className="grid grid-cols-4 gap-1.5">
+      {tiles.map((_, i) => {
+        const row = Math.floor(i / 4);
+        const col = i % 4;
+        const delay = (row + col) * 0.12;
+        return (
+          <motion.span
+            key={i}
+            className={cn("size-4 rounded-[3px]", accent)}
+            animate={
+              run
+                ? { opacity: [0.2, 1, 0.2], scale: [0.85, 1, 0.85] }
+                : { opacity: 0.35, scale: 0.9 }
+            }
+            transition={{
+              duration: 1.4,
+              ease: "easeInOut",
+              repeat: run ? Infinity : 0,
+              delay: run ? delay : 0,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

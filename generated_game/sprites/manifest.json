@@ -1,0 +1,11 @@
+{
+  "sprites": {
+    "player": "player.png",
+    "good_1": "good_1.png",
+    "bad_1": "bad_1.png",
+    "bad_2": "bad_2.png",
+    "bad_3": "bad_3.png",
+    "bad_4": "bad_4.png",
+    "background": "background.png"
+  }
+}

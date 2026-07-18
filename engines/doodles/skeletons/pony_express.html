@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pony Express Skeleton</title>
+<style>
+  html,body{margin:0;height:100%;background:#f4e4c1;font-family:'Trebuchet MS',sans-serif;overflow:hidden;}
+  #wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  canvas{background:#e9d8a6;box-shadow:0 8px 40px rgba(0,0,0,.25);border-radius:8px;}
+  #hud{position:absolute;top:16px;left:0;right:0;text-align:center;color:#5a3210;font-size:22px;font-weight:bold;pointer-events:none;}
+  #msg{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;text-align:center;padding:24px;}
+  #msg h1{font-size:44px;margin:.2em;} #msg p{font-size:20px;max-width:640px;}
+  button{margin-top:16px;padding:12px 28px;font-size:18px;border:none;border-radius:30px;background:#e07a1f;color:#fff;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="900" height="540"></canvas></div>
+<div id="hud"></div>
+<div id="msg"><h1 id="msgTitle"></h1><p id="msgBody"></p><button onclick="restart()">Play again</button></div>
+
+<!-- PARAMS_INJECTION_POINT -->
+
+<script>
+// ARCHETYPE: Pony Express — side-scrolling lane runner. Catch GOOD items, dodge BAD items.
+// CODEGEN: theme the labels/sprites/tuning to the launch; keep the lane-runner mechanic.
+const D = window.GAME_DESIGN || {};
+const M = (window.SPRITE_MANIFEST && window.SPRITE_MANIFEST.sprites) || {};
+const cv = document.getElementById('game'), ctx = cv.getContext('2d');
+const hud = document.getElementById('hud');
+const good = D.good_items && D.good_items.length ? D.good_items : [{name:'Good',sprite:'good',points:100}];
+const bad  = D.bad_items  && D.bad_items.length  ? D.bad_items  : [{name:'Bad',sprite:'bad'}];
+const DURATION = D.duration_seconds || 60;
+const TARGET = D.target_score || 1500;
+
+const sprites = {};
+for (const k in M){ const img=new Image(); img.src='sprites/'+M[k]; sprites[k]=img; }
+function spr(name){ const i=sprites[name]; return (i && i.complete && i.naturalWidth) ? i : null; }
+
+const LANES=3, laneY=i=>135+i*150;
+let player, items, score, timeLeft, spawnT, running, won, last;
+function reset(){ player={lane:1,x:150}; items=[]; score=0; timeLeft=DURATION; spawnT=0; running=true; won=false; last=performance.now(); }
+reset();
+
+addEventListener('keydown',e=>{
+  if(['ArrowUp','w','W'].includes(e.key)) player.lane=Math.max(0,player.lane-1);
+  if(['ArrowDown','s','S'].includes(e.key)) player.lane=Math.min(LANES-1,player.lane+1);
+});
+cv.addEventListener('click',e=>{ const y=e.offsetY; player.lane=Math.max(0,Math.min(LANES-1,Math.round((y-135)/150))); });
+
+function spawn(){
+  const isBad = Math.random()<0.42;
+  const pool = isBad?bad:good; const def = pool[Math.floor(Math.random()*pool.length)];
+  items.push({lane:Math.floor(Math.random()*LANES), x:cv.width+40, bad:isBad, def});
+}
+
+function update(dt){
+  if(!running) return;
+  timeLeft-=dt; if(timeLeft<=0){ timeLeft=0; end(score>=TARGET); return; }
+  const speed = 260 + (DURATION-timeLeft)*3.2;
+  spawnT-=dt; if(spawnT<=0){ spawn(); spawnT=Math.max(0.35,0.95-(DURATION-timeLeft)*0.008); }
+  for(const it of items) it.x-=speed*dt;
+  for(let i=items.length-1;i>=0;i--){ const it=items[i];
+    if(it.x<-40){ items.splice(i,1); continue; }
+    if(it.lane===player.lane && Math.abs(it.x-player.x)<52){
+      if(it.bad){ end(false); return; }
+      score+=it.def.points||100; items.splice(i,1);
+    }
+  }
+}
+
+function drawEntity(x,y,name,fallback,size){
+  const s=spr(name);
+  if(s) ctx.drawImage(s,x-size/2,y-size/2,size,size);
+  else{ ctx.fillStyle=fallback; ctx.beginPath(); ctx.arc(x,y,size/2,0,7); ctx.fill(); }
+}
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const bg=spr('background'); if(bg) ctx.drawImage(bg,0,0,cv.width,cv.height);
+  ctx.strokeStyle='rgba(90,50,16,.25)';
+  for(let i=0;i<LANES;i++){ ctx.beginPath(); ctx.moveTo(0,laneY(i)+55); ctx.lineTo(cv.width,laneY(i)+55); ctx.stroke(); }
+  for(const it of items) drawEntity(it.x,laneY(it.lane),it.def.sprite,it.bad?'#c0392b':'#27ae60',56);
+  drawEntity(player.x,laneY(player.lane),(D.player&&D.player.sprite)||'player','#2c3e50',72);
+  hud.textContent = `${D.hud_label||'Score'}: ${score} / ${TARGET}    ⏱ ${Math.ceil(timeLeft)}s`;
+}
+
+function loop(now){ const dt=Math.min((now-last)/1000,.05); last=now; update(dt); draw(); if(running) requestAnimationFrame(loop); }
+function end(w){ running=false; won=w;
+  document.getElementById('msgTitle').textContent = w?'YOU WIN!':'GAME OVER';
+  const stat=(D.closing_stat||'').replace('{score}',score).replace('X',score);
+  document.getElementById('msgBody').textContent = (w?stat:'') + `  (Score: ${score})`;
+  document.getElementById('msg').style.display='flex';
+}
+function restart(){ document.getElementById('msg').style.display='none'; reset(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{
+  "chosen_archetype": "pony_express",
+  "why": "A side-scrolling collect-and-dodge runner best dramatizes grabbing only legitimate scoped charges while avoiding everything off-scope at launch-speed volume.",
+  "title": "Ramp Express: Scope Sprint",
+  "subtitle": "Catch the exact charge your agent card was made for\u2014dodge everything else.",
+  "hud_label": "Scoped Charges",
+  "duration_seconds": 60,
+  "target_score": 1500,
+  "closing_stat": "You safely captured {score} scoped charges without blowing the budget.",
+  "feature_explainer": {
+    "headline": "Ramp Agent Cards (Ramp Express)",
+    "bullets": [
+      "Ramp issues scoped, single-purpose agent cards.",
+      "Each card can only be used for the exact charge it was created for.",
+      "Agents collect legitimate scoped charges that match their card.",
+      "Open cards, duplicate charges, fraudulent vendors, and expired authorization tokens are off-scope risks."
+    ],
+    "cta_text": "Explore Ramp Express",
+    "learn_more_url": "https://ramp.com"
+  },
+  "art_style": "Flat vibrant cartoon with bold outlines and a wild-west express-runner feel, reimagined as a high-speed finance trail with card rails, receipt tumbleweeds, and Ramp-green accents.",
+  "player": {
+    "name": "Scoped Agent Courier",
+    "sprite": "player"
+  },
+  "good_items": [
+    {
+      "name": "Legitimate Scoped Charge",
+      "sprite": "good_1",
+      "points": 100
+    }
+  ],
+  "bad_items": [
+    {
+      "name": "Open Unscoped Card",
+      "sprite": "bad_1"
+    },
+    {
+      "name": "Duplicate Charge",
+      "sprite": "bad_2"
+    },
+    {
+      "name": "Fake Vendor",
+      "sprite": "bad_3"
+    },
+    {
+      "name": "Expired Authorization Token",
+      "sprite": "bad_4"
+    }
+  ],
+  "sprites": [
+    {
+      "name": "player",
+      "role": "player",
+      "prompt": "agent courier holding a locked payment card"
+    },
+    {
+      "name": "good_1",
+      "role": "good",
+      "prompt": "approved charge receipt with lock and checkmark"
+    },
+    {
+      "name": "bad_1",
+      "role": "bad",
+      "prompt": "open payment card with warning symbol"
+    },
+    {
+      "name": "bad_2",
+      "role": "bad",
+      "prompt": "two identical charge receipts stacked together"
+    },
+    {
+      "name": "bad_3",
+      "role": "bad",
+      "prompt": "suspicious vendor storefront with mask icon"
+    },
+    {
+      "name": "bad_4",
+      "role": "bad",
+      "prompt": "authorization token with cracked hourglass"
+    },
+    {
+      "name": "background",
+      "role": "bg",
+      "prompt": "finance express trail with card rails receipt signs and office skyline"
+    }
+  ]
+}

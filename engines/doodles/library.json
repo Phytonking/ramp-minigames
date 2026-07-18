@@ -1,0 +1,59 @@
+{
+  "description": "Library of Google Doodle game archetypes. The MAP stage picks the one whose mechanic best dramatizes the launch. Each archetype has a working HTML skeleton the CODEGEN stage customizes.",
+  "archetypes": [
+    {
+      "id": "pony_express",
+      "name": "Pony Express (2015)",
+      "skeleton": "pony_express.html",
+      "mechanic": "Side-scrolling horseback runner. Auto-run to the right; jump between lanes/obstacles; catch good items (mail bags) flying at you and dodge bad ones (bandits/cacti). Score = items caught; distance-based difficulty ramp.",
+      "controls": "Up/Down arrows or W/S to switch lanes; catch by touching good items, avoid hazards.",
+      "good_for": "Anything framed as 'keep up with incoming volume', delivery, throughput, collect-the-right-things while moving fast.",
+      "art_style": "flat vibrant cartoon, bold outlines, wild-west palette, simple side-view sprites"
+    },
+    {
+      "id": "magic_cat",
+      "name": "Magic Cat Academy (Halloween 2016)",
+      "skeleton": "magic_cat.html",
+      "mechanic": "Wave-based defense. Enemies (ghosts) approach from edges, each tagged with a symbol/shape; player draws/selects the matching symbol to zap them before they reach the center. Survive escalating waves.",
+      "controls": "Click/drag to trace a symbol, or click enemies matching the highlighted glyph.",
+      "good_for": "Matching the right response to the right threat, fraud/risk clearing, triage where each item needs a specific correct action.",
+      "art_style": "spooky-cute cartoon, purple/orange night palette, chunky friendly monster sprites"
+    },
+    {
+      "id": "cricket",
+      "name": "Cricket (2017)",
+      "skeleton": "cricket.html",
+      "mechanic": "Timing-based batting. Balls are pitched at varying speeds; player swings at the right moment; well-timed hits score runs (perfect timing = boundary/6). Miss too many and you're out.",
+      "controls": "Spacebar / click to swing at the right moment.",
+      "good_for": "Precision, timing, 'act at the right moment', converting opportunities, hit-rate metrics.",
+      "art_style": "clean flat cartoon, green pitch, bright simple characters"
+    },
+    {
+      "id": "pangolin",
+      "name": "Pangolin Love (2017)",
+      "skeleton": "pangolin.html",
+      "mechanic": "Roll-and-collect platformer. Player rolls through a scrolling level gathering ingredients/tokens and avoiding hazards, building toward a goal quota before time runs out.",
+      "controls": "Left/Right to move, Space/Up to jump; roll into collectibles.",
+      "good_for": "Accumulating resources toward a goal, gathering while avoiding pitfalls, savings/rewards stories.",
+      "art_style": "soft rounded cartoon, warm nature palette, cute animal-style hero sprite"
+    },
+    {
+      "id": "champion_island",
+      "name": "Doodle Champion Island (Olympics 2021)",
+      "skeleton": "champion_island.html",
+      "mechanic": "Single arcade sport challenge: a fast score-attack mini-event (e.g. rapid tap/dodge lane game) with a clear scoreboard and a target to beat within the time limit.",
+      "controls": "Arrow keys / click depending on the event; reach the target score before time.",
+      "good_for": "Competitive score-attack, 'beat the benchmark', head-to-head or personal-best framing.",
+      "art_style": "anime-inspired flat color, bright sporty palette, energetic character sprites"
+    },
+    {
+      "id": "half_moon",
+      "name": "Rise of the Half Moon (2024)",
+      "skeleton": "half_moon.html",
+      "mechanic": "Turn-based grid/connect game. Place or connect tokens on a small board to form matches/lines that trigger effects; plan a few moves to reach a target within limited turns.",
+      "controls": "Click tiles/cells to place or connect tokens.",
+      "good_for": "Planning, connecting related items, deliberate decisions over a small board, categorization/sorting into groups.",
+      "art_style": "serene minimalist, soft night-sky palette, glowing celestial sprites"
+    }
+  ]
+}
