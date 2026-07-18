@@ -63,6 +63,19 @@ body {
   color: var(--color-paper);
 }
 
+/* Light-mode override for .theme-arcade when user prefers light or toggles */
+.theme-arcade.light,
+[data-theme="light"] .theme-arcade {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+[data-theme="light"] .theme-arcade .border-night-border { border-color: var(--color-line); }
+[data-theme="light"] .theme-arcade .bg-night { background: var(--color-bg); }
+[data-theme="light"] .theme-arcade .bg-night-soft { background: var(--color-surface); }
+[data-theme="light"] .theme-arcade .bg-night-card { background: #fff; }
+[data-theme="light"] .theme-arcade .text-paper { color: var(--color-ink); }
+[data-theme="light"] .theme-arcade .text-paper-muted { color: var(--color-ink-muted); }
+
 /* Motion discipline — respect reduced motion everywhere (DESIGN.md §6) */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -2,12 +2,28 @@ import Link from "next/link";
 import { ArrowRight, Gamepad2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HARDCODED_GAMES } from "@/lib/games";
+import { RampMinigamesLogo } from "@/components/RampMinigamesLogo";
 
 export default function LandingPage() {
   return (
     <main className="flex-1">
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 border-b border-line bg-bg/80 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <RampMinigamesLogo />
+          <div className="flex items-center gap-6 text-sm text-ink-muted">
+            <Link href="/arcade" className="hover:text-ink transition-colors">
+              Arcade
+            </Link>
+            <Link href="/studio" className="hover:text-ink transition-colors">
+              Studio
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-6 pb-24 pt-28">
+      <section className="mx-auto max-w-5xl px-6 pb-24 pt-16">
         <div className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs text-ink-muted">
           <span className="size-1.5 rounded-full bg-solar" />
           Builders Cup 2026

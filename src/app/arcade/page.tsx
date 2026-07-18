@@ -1,16 +1,17 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, LogIn } from "lucide-react";
 import { HARDCODED_GAMES } from "@/lib/games";
-import { ArcadeHero } from "@/components/arcade/ArcadeHero";
 import { GameCard } from "@/components/arcade/GameCard";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { getSession } from "@/lib/auth";
 
-export default function ArcadePage() {
+export default async function ArcadePage() {
+  const session = await getSession();
   const [featured, ...rest] = HARDCODED_GAMES;
 
   return (
-    <main className="min-h-screen">
-      {/* Top bar */}
+    <main className="min-h-screen theme-arcade">
       <header className="sticky top-0 z-30 border-b border-night-border bg-night/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <Link
@@ -20,28 +21,48 @@ export default function ArcadePage() {
             ramp<span className="text-paper-muted">/</span>minigames
           </Link>
           <div className="flex items-center gap-2">
-            <span className="hidden font-mono text-[11px] uppercase tracking-widest text-paper-muted sm:inline">
-              The Arcade
-            </span>
-            <Button variant="outline-dark" size="sm" asChild>
-              <Link href="/studio">
-                Open Studio
-                <ArrowUpRight className="size-4" />
-              </Link>
-            </Button>
+            <ThemeToggle />
+            {session ? (
+              <span className="hidden font-mono text-[11px] text-paper-muted sm:inline">
+                {session.name}
+              </span>
+            ) : (
+              <Button variant="outline-dark" size="sm" asChild>
+                <Link href="/login?next=/arcade">
+                  <LogIn className="size-3.5" />
+                  Sign in
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <ArcadeHero gameCount={HARDCODED_GAMES.length} />
+      {/* Login-to-save banner — only shown when signed out */}
+      {!session && (
+        <div className="border-b border-night-border bg-night-soft/60">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
+            <p className="font-mono text-[11px] text-paper-muted">
+              <span className="text-solar">→</span>{" "}
+              Sign in to save your score and track progress across games
+            </p>
+            <Link
+              href="/login?next=/arcade"
+              className="shrink-0 font-mono text-[11px] text-paper underline-offset-2 hover:underline"
+            >
+              Log in to save your score
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Gallery */}
-      <section id="games" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-16">
+      <section className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-medium tracking-[-0.02em] text-paper">
+            <h1 className="text-2xl font-medium tracking-[-0.02em] text-paper">
               The gallery
-            </h2>
+            </h1>
             <p className="mt-1 text-sm text-paper-muted">
               Three launches, three mechanics — one system that made them all.
             </p>
@@ -56,26 +77,6 @@ export default function ArcadePage() {
           {rest.map((game) => (
             <GameCard key={game.slug} game={game} />
           ))}
-        </div>
-      </section>
-
-      {/* Provenance close */}
-      <section className="border-t border-night-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-3 px-6 py-14">
-          <p className="max-w-2xl text-lg leading-relaxed text-paper">
-            This isn&apos;t three games we made — it&apos;s one system that made
-            three games.{" "}
-            <span className="text-paper-muted">
-              Every future Ramp launch could get one of these instead of just a
-              blog post.
-            </span>
-          </p>
-          <Button variant="ghost-dark" size="sm" asChild>
-            <Link href="/studio">
-              See how they&apos;re generated
-              <ArrowUpRight className="size-4" />
-            </Link>
-          </Button>
         </div>
       </section>
     </main>
