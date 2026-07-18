@@ -5,6 +5,8 @@ import { AppShell } from "@/components/shell/AppShell";
 import { getSession } from "@/lib/auth";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Ramp Minigames — playable explainers for every launch",
   description:

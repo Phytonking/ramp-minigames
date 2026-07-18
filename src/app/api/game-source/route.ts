@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const abs = join(process.cwd(), rel);
+    const abs = join(/* turbopackIgnore: true */ process.cwd(), rel);
     const src = readFileSync(abs, "utf-8");
     return new NextResponse(src, {
       headers: { "content-type": "text/plain; charset=utf-8" },
